@@ -1,22 +1,29 @@
 import logging
+import os
 from typing import Literal
 
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from pydantic_settings import BaseSettings
 
 
-class Settings(BaseSettings):
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/triage"
-    openai_api_key: str | None = None
-    environment: str = "development"
+load_dotenv()
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+
+class Settings(BaseSettings):
+    database_url: str = os.environ.get("DATABASE_URL")
+    environment: str = os.environ.get("ENVIRONMENT", "development")
 
 
 settings = Settings()
 
+_async_openai_client: AsyncOpenAI | None = None
 
+LLM_API_KEY = os.environ.get("LLM_API_KEY")
+MODEL = "openai/gpt-oss-20b:free"
+TEMPERATURE = 0.1
+MAX_TOKENS = 1000
+SUMMARY_TOKENS = 150
 LOG_COLORS = {
     "RED": "\033[31m",
     "GREEN": "\033[32m",
@@ -121,3 +128,17 @@ def setup_logger(name: str = __name__) -> CustomLogger:
     logger.propagate = False
 
     return CustomLogger(logger)
+
+
+def get_async_openai_client() -> AsyncOpenAI:
+    global _async_openai_client
+
+    if not LLM_API_KEY:
+        raise ValueError("Invalid API Key provided")
+
+    if not _async_openai_client:
+        _async_openai_client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=LLM_API_KEY,
+        )
+    return _async_openai_client

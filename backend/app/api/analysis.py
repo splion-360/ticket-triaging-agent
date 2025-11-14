@@ -19,9 +19,9 @@ router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
 
 @router.post("/", response_model=AnalysisRunResponse)
-def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
+async def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
     try:
-        analysis_run = run_graph(db, request.ticket_ids)
+        analysis_run = await run_graph(db, request.ticket_ids)
 
         ticket_analyses = (
             db.query(TicketAnalysis)

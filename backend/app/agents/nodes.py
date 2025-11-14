@@ -2,10 +2,20 @@ import json
 from typing import Any, TypedDict
 
 from app.agents.fallback import categorize_ticket, generate_batch_summary
-from app.config import settings
+from app.config import (
+    MAX_TOKENS,
+    MODEL,
+    SUMMARY_TOKENS,
+    TEMPERATURE,
+    get_async_openai_client,
+    setup_logger,
+)
 from app.database import get_db_session
 from app.exceptions import AnalysisError
 from app.models import AnalysisRun, Ticket, TicketAnalysis
+
+
+logger = setup_logger(__name__)
 
 
 class AnalysisState(TypedDict):
@@ -43,30 +53,46 @@ def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
         raise AnalysisError(f"Failed to fetch tickets: {str(e)}") from e
 
 
-def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
+async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
         results = []
 
-        if settings.openai_api_key:
-            try:
-                results = llm_batch_analyze(tickets)
-            except Exception:
-                results = [categorize_ticket(ticket) for ticket in tickets]
-        else:
+        try:
+            results = await get_analysis(tickets)
+        except Exception:
+            logger.warning(
+                "Trouble with the provided client. Falling back to non-LLM generated response"
+            )
             results = [categorize_ticket(ticket) for ticket in tickets]
 
-        summary = generate_batch_summary(tickets, results)
-
         state["results"] = results
+        return state
+
+    except Exception as e:
+        raise AnalysisError(f"Failed to classify tickets: {str(e)}") from e
+
+
+async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
+    try:
+        tickets = state["tickets"]
+
+        try:
+            summary = await get_summary(tickets)
+        except Exception:
+            logger.warning(
+                "Trouble with the provided client. Falling back to non-LLM generated summary"
+            )
+            summary = generate_batch_summary(tickets, [])
+
         state["summary"] = summary
         return state
 
     except Exception as e:
-        raise AnalysisError(f"Failed to analyze tickets: {str(e)}") from e
+        raise AnalysisError(f"Failed to summarize tickets: {str(e)}") from e
 
 
-def save_results_node(state: AnalysisState) -> AnalysisState:
+def node_save_results(state: AnalysisState) -> AnalysisState:
     db = get_db_session()
     try:
         analysis_run = (
@@ -104,15 +130,9 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
         db.close()
 
 
-def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
+async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
     try:
-        from langchain_openai import ChatOpenAI
-
-        llm = ChatOpenAI(
-            model="gpt-3.5-turbo",
-            api_key=settings.openai_api_key,
-            temperature=0,
-        )
+        client = get_async_openai_client()
 
         tickets_text = "\n".join(
             [
@@ -126,15 +146,55 @@ def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
 
         {tickets_text}
 
-        For each ticket, provide category (billing/bug/feature_request/authentication/other),
-        priority (high/medium/low), and brief notes.
+        For each ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
 
         Respond with valid JSON array:
-        [{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]
+        [{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]"""
+
+        response = await client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+        )
+
+        data = response.choices[0].message.content
+        logger.info(f"Preview of response from classify agent: {data[:50]}")
+        return json.loads(data)
+
+    except Exception as e:
+        raise e
+
+
+async def get_summary(tickets: list[Ticket]) -> str:
+    try:
+        client = get_async_openai_client()
+
+        tickets_text = "\n".join(
+            [
+                f"Ticket {i+1}: Title: {ticket.title} | Description: {ticket.description}"
+                for i, ticket in enumerate(tickets)
+            ]
+        )
+
+        prompt = f"""
+
+        You are a SUMMARIZING AGENT. Your task is to summarize these support tickets in 100 words or less:
+        TICKETS:
+        {tickets_text}
+
+        Provide a brief overview of the main issues without MISSING ANY details.
         """
 
-        response = llm.invoke(prompt)
-        return json.loads(response.content)
+        response = await client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=TEMPERATURE,
+            max_tokens=SUMMARY_TOKENS,
+        )
+        data = response.choices[0].message.content.strip()
+        logger.info(f"Preview of response from summary agent: {data[:50]}")
+        return data
 
-    except Exception:
-        return [categorize_ticket(ticket) for ticket in tickets]
+    except Exception as e:
+        raise e

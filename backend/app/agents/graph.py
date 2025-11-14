@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.agents.nodes import (
     AnalysisState,
-    analyze_tickets_node,
+    node_classify_tickets,
     node_fetch_tickets,
-    save_results_node,
+    node_save_results,
+    node_summarize_tickets,
 )
 from app.config import setup_logger
 from app.exceptions import AnalysisError
@@ -23,11 +24,14 @@ def create_graph():
     graph = StateGraph(AnalysisState)
 
     graph.add_node("fetch", node_fetch_tickets)
-    graph.add_node("analyze", analyze_tickets_node)
-    graph.add_node("save", save_results_node)
+    graph.add_node("classify", node_classify_tickets)
+    graph.add_node("summarize", node_summarize_tickets)
+    graph.add_node("save", node_save_results)
 
-    graph.add_edge("fetch", "analyze")
-    graph.add_edge("analyze", "save")
+    graph.add_edge("fetch", "classify")
+    graph.add_edge("fetch", "summarize")
+    graph.add_edge("classify", "save")
+    graph.add_edge("summarize", "save")
     graph.add_edge("save", END)
 
     graph.set_entry_point("fetch")
@@ -36,7 +40,7 @@ def create_graph():
     return graph.compile()
 
 
-def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
+async def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
     try:
         logger.info("Analysis in progress...", "WHITE")
         analysis_run = AnalysisRun(summary="Analysis in progress...")
@@ -58,7 +62,7 @@ def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
         ):
             visualize_graph(graph)
 
-        graph.invoke(initial_state)
+        await graph.ainvoke(initial_state)
 
         db.refresh(analysis_run)
         return analysis_run
