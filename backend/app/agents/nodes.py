@@ -1,6 +1,9 @@
 import asyncio
 import json
+import re
 from typing import Any, TypedDict
+
+from pydantic import BaseModel
 
 from app.agents.fallback import categorize_ticket, generate_batch_summary
 from app.config import (
@@ -18,6 +21,12 @@ from app.models import AnalysisRun, Ticket, TicketAnalysis
 
 
 logger = setup_logger(__name__)
+
+
+class TicketStructuredOutput(BaseModel):
+    category: str
+    priority: str
+    notes: str
 
 
 class AnalysisState(TypedDict):
@@ -138,39 +147,69 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
         async with semaphore:
             try:
                 client = get_async_openai_client()
-
                 prompt = f"""
                 Analyze this support ticket and provide categorization:
 
                 Ticket: Title: {ticket.title} | Description: {ticket.description}
 
                 For this ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
-
-                Respond with valid JSON object:
-                {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
+                Respond with valid JSON object: {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
                 """
 
-                response = await client.chat.completions.create(
-                    model=MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=TEMPERATURE,
-                    max_tokens=MAX_TOKENS,
-                )
-
-                data = response.choices[0].message.content
-                logger.info(f"Raw LLM response for ticket {ticket.id[:8]}...: '{data}'")
-                
-                if not data or not data.strip():
-                    logger.warning(f"Empty response from LLM for ticket {ticket.id[:8]}...")
-                    return categorize_ticket(ticket)
-                
                 try:
-                    parsed_data = json.loads(data)
-                    logger.info(f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}")
-                    return parsed_data
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse JSON from LLM for ticket {ticket.id[:8]}...: {e}. Raw response: '{data}'")
-                    return categorize_ticket(ticket)
+                    response = await client.chat.completions.parse(
+                        model=MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=TEMPERATURE,
+                        max_tokens=MAX_TOKENS,
+                        response_format=TicketStructuredOutput,
+                    )
+
+                    if response.choices[0].message.refusal:
+                        raise Exception("Refusal for structured output parsing")
+
+                    parsed = response.choices[0].message.parsed
+                    result = {
+                        "category": parsed.category,
+                        "priority": parsed.priority,
+                        "notes": parsed.notes,
+                    }
+                    logger.info(
+                        f"Analyzed ticket {ticket.id[:8]}... - Category: {result['category']}"
+                    )
+                    return result
+
+                except Exception as e:
+                    logger.warning(
+                        f"Structured Output passign failed. Falling back to manual parser: {e}"
+                    )
+                    response = await client.chat.completions.create(
+                        model=MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=TEMPERATURE,
+                        max_tokens=MAX_TOKENS,
+                    )
+
+                    data = response.choices[0].message.content
+                    if not data or not data.strip():
+                        return categorize_ticket(ticket)
+
+                    json_match = re.search(
+                        r"```(?:json)?\s*(.*?)\s*```", data, re.DOTALL
+                    )
+                    json_content = (
+                        json_match.group(1) if json_match else data.strip()
+                    )
+
+                    try:
+                        parsed_data = json.loads(json_content)
+                        logger.info(
+                            f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}"
+                        )
+                        return parsed_data
+
+                    except json.JSONDecodeError as e:
+                        raise e
 
             except Exception as e:
                 logger.warning(
@@ -181,18 +220,8 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
     tasks = [analyze_single_ticket(ticket) for ticket in tickets]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    final_results = []
-    for i, result in enumerate(results):
-        if isinstance(result, Exception):
-            logger.warning(f"Task {i} failed: {result}, using fallback")
-            final_results.append(categorize_ticket(tickets[i]))
-        else:
-            final_results.append(result)
-
-    logger.info(
-        f"Completed multithreaded analysis of {len(tickets)} tickets with max {MAX_CONCURRENT_REQUESTS} concurrent requests"
-    )
-    return final_results
+    logger.info(f"Completed processing {len(tickets)} tickets")
+    return results
 
 
 async def get_summary(tickets: list[Ticket]) -> str:

@@ -11,7 +11,6 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
   onSubmit,
   loading
 }) => {
-  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'create' | 'upload'>('create');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
