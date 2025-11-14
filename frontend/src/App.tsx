@@ -56,7 +56,6 @@ const AppContent = () => {
       setLoading(prev => ({ ...prev, analyzing: true }));
       const result = await analysisApi.runAnalysis({});
       console.log(result)
-      setAnalysis(result);
       await loadTickets();
       addToast(`Analysis complete! Processed ${result.ticket_analyses.length} tickets`, 'success');
     } catch (err) {
