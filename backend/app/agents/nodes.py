@@ -92,9 +92,6 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
             db.add(ticket_analysis)
 
             ticket.status = "complete"
-            ticket.category = result["category"]
-            ticket.priority = result["priority"]
-            ticket.notes = result.get("notes")
 
         db.commit()
         db.close()
