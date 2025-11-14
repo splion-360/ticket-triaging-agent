@@ -69,9 +69,9 @@ function App() {
   }, []);
 
   return (
-    <div style={{ 
-      maxWidth: '1200px', 
-      margin: '0 auto', 
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
       padding: '2rem',
       fontFamily: '"IBM Plex Mono", monospace'
     }}>
@@ -97,13 +97,13 @@ function App() {
         </div>
       )}
 
-      <TicketForm 
-        onSubmit={handleCreateTickets} 
+      <TicketForm
+        onSubmit={handleCreateTickets}
         loading={loading.creating}
       />
 
-      <TicketList 
-        tickets={tickets} 
+      <TicketList
+        tickets={tickets}
         loading={loading.tickets}
       />
 

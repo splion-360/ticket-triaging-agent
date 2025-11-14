@@ -189,9 +189,3 @@ def create_analysis_graph():
 4. "Add LangGraph workflow with reusable node patterns"
 5. "Create React frontend with shared component patterns"
 6. "Configure Docker Compose with reusable configurations"
-
-## Time Allocation
-- Backend + LangGraph: 90 minutes
-- Frontend: 50 minutes
-- Infrastructure + Docs: 40 minutes
-- **Total**: 3 hours
