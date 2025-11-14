@@ -75,7 +75,6 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
         await onSubmit(tickets);
         setUploadedFile(null);
         setErrors({ title: '', description: '', file: '' });
-        addToast(`Successfully uploaded ${tickets.length} ticket${tickets.length > 1 ? 's' : ''}`, 'success');
       } catch (error) {
         newErrors.file = 'Invalid JSON file format';
         setErrors(newErrors);

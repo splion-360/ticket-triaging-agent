@@ -20,7 +20,8 @@ settings = Settings()
 _async_openai_client: AsyncOpenAI | None = None
 
 LLM_API_KEY = os.environ.get("LLM_API_KEY")
-MODEL = "openai/gpt-oss-20b:free"
+MODEL = "gemma3"  # "openai/gpt-oss-20b:free"
+API_URL = "http://host.docker.internal:11434/v1"  # "https://openrouter.ai/api/v1"
 TEMPERATURE = 0.1
 MAX_TOKENS = 1000
 SUMMARY_TOKENS = 150
@@ -139,7 +140,7 @@ def get_async_openai_client() -> AsyncOpenAI:
 
     if not _async_openai_client:
         _async_openai_client = AsyncOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=LLM_API_KEY,
+            base_url=API_URL,
+            api_key="ollama-api-key",
         )
     return _async_openai_client

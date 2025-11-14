@@ -29,8 +29,7 @@ def create_graph():
     graph.add_node("save", node_save_results)
 
     graph.add_edge("fetch", "classify")
-    graph.add_edge("fetch", "summarize")
-    graph.add_edge("classify", "save")
+    graph.add_edge("classify", "summarize")
     graph.add_edge("summarize", "save")
     graph.add_edge("save", END)
 
@@ -57,9 +56,7 @@ async def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
 
         graph = create_graph()
 
-        if not os.path.exists("backend/assets") or not os.listdir(
-            "backend/assets"
-        ):
+        if not os.path.exists("assets/") or not os.listdir("assets/"):
             visualize_graph(graph)
 
         await graph.ainvoke(initial_state)

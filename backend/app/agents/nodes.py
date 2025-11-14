@@ -1,8 +1,6 @@
 import asyncio
 import json
-from typing import Annotated, Any, TypedDict
-
-from langgraph.graph import add
+from typing import Any, TypedDict
 
 from app.agents.fallback import categorize_ticket, generate_batch_summary
 from app.config import (
@@ -25,8 +23,8 @@ logger = setup_logger(__name__)
 class AnalysisState(TypedDict):
     analysis_run_id: int
     tickets: list[Ticket]
-    results: Annotated[list[dict[str, Any]], add]
-    summary: Annotated[str, add]
+    results: list[dict[str, Any]]
+    summary: str
 
 
 def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
@@ -63,13 +61,14 @@ async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
 
         try:
             results = await get_analysis(tickets)
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Trouble with the provided client. Falling back to non-LLM generated response"
+                f"Trouble with the provided client. Falling back to non-LLM generated response: {e}"
             )
             results = [categorize_ticket(ticket) for ticket in tickets]
 
-        return {"results": results}
+        state["results"] = results
+        return state
 
     except Exception as e:
         raise AnalysisError(f"Failed to classify tickets: {str(e)}") from e
@@ -81,13 +80,14 @@ async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
 
         try:
             summary = await get_summary(tickets)
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Trouble with the provided client. Falling back to non-LLM generated summary"
+                f"Trouble with the provided client. Falling back to non-LLM generated summary: {e}"
             )
-            summary = generate_batch_summary(tickets, [])
+            summary = generate_batch_summary(tickets, state.get("results", []))
 
-        return {"summary": summary}
+        state["summary"] = summary
+        return state
 
     except Exception as e:
         raise AnalysisError(f"Failed to summarize tickets: {str(e)}") from e
@@ -158,10 +158,19 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
                 )
 
                 data = response.choices[0].message.content
-                logger.info(
-                    f"Analyzed ticket {ticket.id[:8]}... - Category: {json.loads(data).get('category', 'unknown')}"
-                )
-                return json.loads(data)
+                logger.info(f"Raw LLM response for ticket {ticket.id[:8]}...: '{data}'")
+                
+                if not data or not data.strip():
+                    logger.warning(f"Empty response from LLM for ticket {ticket.id[:8]}...")
+                    return categorize_ticket(ticket)
+                
+                try:
+                    parsed_data = json.loads(data)
+                    logger.info(f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}")
+                    return parsed_data
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse JSON from LLM for ticket {ticket.id[:8]}...: {e}. Raw response: '{data}'")
+                    return categorize_ticket(ticket)
 
             except Exception as e:
                 logger.warning(
