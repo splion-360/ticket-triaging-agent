@@ -5,11 +5,11 @@ from app.schemas.ticket import TicketResponse
 
 
 class AnalysisRequest(BaseCreateSchema):
-    ticket_ids: list[int] | None = None
+    ticket_ids: list[str] | None = None
 
 class TicketAnalysisResponse(BaseResponseSchema):
-    analysis_run_id: int
-    ticket_id: int
+    analysis_run_id: str
+    ticket_id: str
     category: str
     priority: str
     notes: str | None = None

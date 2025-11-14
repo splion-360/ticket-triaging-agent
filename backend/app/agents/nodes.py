@@ -30,14 +30,14 @@ def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
                 f"Analysis run {state['analysis_run_id']} not found"
             )
 
-        tickets = db.query(Ticket).all()
+        tickets = db.query(Ticket).filter(Ticket.status == "incomplete").all()
 
         state["tickets"] = tickets
         db.close()
         return state
 
     except Exception as e:
-        raise AnalysisError(f"Failed to fetch tickets: {str(e)}")
+        raise AnalysisError(f"Failed to fetch tickets: {str(e)}") from e
 
 
 def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
@@ -64,13 +64,12 @@ def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
         return state
 
     except Exception as e:
-        raise AnalysisError(f"Failed to analyze tickets: {str(e)}")
+        raise AnalysisError(f"Failed to analyze tickets: {str(e)}") from e
 
 
 def save_results_node(state: AnalysisState) -> AnalysisState:
+    db = get_db_session()
     try:
-        db = get_db_session()
-
         analysis_run = (
             db.query(AnalysisRun)
             .filter(AnalysisRun.id == state["analysis_run_id"])
@@ -82,6 +81,11 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
         for i, ticket in enumerate(state["tickets"]):
             result = state["individual_results"][i]
 
+            merged_ticket = db.merge(
+                ticket
+            )  # Merge the ticket to ensure it's tracked by current session! Interesting :)
+            merged_ticket.status = "complete"
+
             ticket_analysis = TicketAnalysis(
                 analysis_run_id=state["analysis_run_id"],
                 ticket_id=ticket.id,
@@ -92,11 +96,13 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
             db.add(ticket_analysis)
 
         db.commit()
-        db.close()
         return state
 
     except Exception as e:
-        raise AnalysisError(f"Failed to save results: {str(e)}")
+        db.rollback()
+        raise AnalysisError(f"Failed to save results: {str(e)}") from e
+    finally:
+        db.close()
 
 
 def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
@@ -116,15 +122,17 @@ def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
             ]
         )
 
-        prompt = f"""Analyze these support tickets and provide categorization:
+        prompt = f"""
+        Analyze these support tickets and provide categorization:
 
-{tickets_text}
+        {tickets_text}
 
-For each ticket, provide category (billing/bug/feature_request/authentication/other), 
-priority (high/medium/low), and brief notes.
+        For each ticket, provide category (billing/bug/feature_request/authentication/other),
+        priority (high/medium/low), and brief notes.
 
-Respond with valid JSON array:
-[{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]"""
+        Respond with valid JSON array:
+        [{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]
+        """
 
         response = llm.invoke(prompt)
         return json.loads(response.content)

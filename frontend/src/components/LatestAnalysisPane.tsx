@@ -80,11 +80,11 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
               }}>
                 <h4 style={{
                   margin: 0,
-                  fontSize: '1.25rem',
+                  fontSize: '0.875rem',
                   fontWeight: 600,
                   color: '#2c3e50'
                 }}>
-                  Run #{analysis.id}
+                  Run (#{analysis.id})
                 </h4>
               </div>
               <p style={{

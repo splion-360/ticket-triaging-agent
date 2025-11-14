@@ -9,3 +9,4 @@ class Ticket(BaseModel):
 
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="incomplete")

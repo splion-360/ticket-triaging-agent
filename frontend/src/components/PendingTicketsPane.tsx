@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Ticket } from '../types';
+import { InfinityLoader } from '../components/LoadingSpinner';
 
 interface PendingTicketsPaneProps {
   tickets: Ticket[];
@@ -15,8 +16,8 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
   analyzing
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
-  const ticketsPerPage = 4;
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+  const ticketsPerPage = 3;
 
   const paginatedTickets = useMemo(() => {
     const startIndex = (currentPage - 1) * ticketsPerPage;
@@ -26,7 +27,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
 
   const totalPages = Math.ceil(tickets.length / ticketsPerPage);
 
-  const toggleTicketExpansion = (ticketId: number) => {
+  const toggleTicketExpansion = (ticketId: string) => {
     setExpandedTickets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(ticketId)) {
@@ -36,11 +37,6 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
       }
       return newSet;
     });
-  };
-
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
   };
 
   return (
@@ -104,7 +100,12 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
         overflowY: 'auto',
         marginBottom: '1rem'
       }}>
-        {loading ? (
+        {analyzing ? (
+          <InfinityLoader
+            size={32}
+            message="Analyzing tickets..."
+          />
+        ) : loading ? (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -134,76 +135,83 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                   key={ticket.id}
                   style={{
                     border: '1px solid #e9ecef',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    backgroundColor: '#f8f9fa',
-                    transition: 'all 0.2s'
+                    borderRadius: '6px',
+                    padding: '10px',
+                    backgroundColor: '#f8f9fa'
                   }}
                 >
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    marginBottom: '8px'
+                    marginBottom: '10px'
                   }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{
-                        margin: '0 0 4px 0',
-                        fontSize: '0.8rem',
+                        margin: '0 0 6px 0',
+                        fontSize: '0.9rem',
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
-                        {ticket.title}
+                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 800 }}>(#{ticket.id})</span>
                       </h4>
-                      <p style={{
-                        margin: 0,
-                        fontSize: '0.7rem',
-                        color: '#6c757d',
-                        lineHeight: 1.3
+
+                      {isExpanded && (
+                        <p style={{
+                          margin: '0 0 8px 0',
+                          fontSize: '0.8rem',
+                          color: '#6c757d',
+                          lineHeight: 1.3,
+                          padding: '6px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '3px',
+                          border: '1px solid #e9ecef'
+                        }}>
+                          <strong>Description:</strong><br />
+                          {ticket.description}
+                        </p>
+                      )}
+
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        alignItems: 'center'
                       }}>
-                        {isExpanded
-                          ? ticket.description
-                          : truncateText(ticket.description, 60)
-                        }
-                      </p>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          padding: '2px 6px',
+                          backgroundColor: '#fff3cd',
+                          color: '#590808ff',
+                          borderRadius: '4px',
+                          fontWeight: 500
+                        }}>
+                          INCOMPLETE
+                        </span>
+                        <span style={{
+                          fontSize: '0.8rem',
+                          color: '#6c757d'
+                        }}>
+                          • {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                     <button
                       onClick={() => toggleTicketExpansion(ticket.id)}
                       style={{
-                        padding: '4px 8px',
-                        border: 'none',
-                        backgroundColor: 'transparent',
+                        padding: '6px 10px',
+                        border: '1px solid #dee2e6',
+                        backgroundColor: 'white',
                         color: '#007bff',
                         fontSize: '0.75rem',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
-                        marginLeft: '8px'
+                        marginLeft: '12px',
+                        borderRadius: '4px'
                       }}
                     >
-                      {isExpanded ? '▲' : '▼'}
+                      {isExpanded ? '▼ Less' : '▶ More'}
                     </button>
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      color: '#6c757d'
-                    }}>
-                      #{ticket.id} • {new Date(ticket.created_at).toLocaleDateString()}
-                    </span>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      padding: '2px 6px',
-                      backgroundColor: '#fff3cd',
-                      color: '#856404',
-                      borderRadius: '4px',
-                      fontWeight: 500
-                    }}>
-                      PENDING
-                    </span>
                   </div>
                 </div>
               );

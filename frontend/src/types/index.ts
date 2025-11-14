@@ -1,5 +1,5 @@
 export interface Ticket {
-  id: number;
+  id: string;
   title: string;
   description: string;
   created_at: string;
@@ -16,9 +16,9 @@ export interface TicketCreate {
 }
 
 export interface TicketAnalysis {
-  id: number;
-  analysis_run_id: number;
-  ticket_id: number;
+  id: string;
+  analysis_run_id: string;
+  ticket_id: string;
   category: string;
   priority: string;
   notes?: string;
@@ -27,12 +27,12 @@ export interface TicketAnalysis {
 }
 
 export interface AnalysisRun {
-  id: number;
+  id: string;
   summary: string;
   created_at: string;
   ticket_analyses: TicketAnalysis[];
 }
 
 export interface AnalysisRequest {
-  ticket_ids?: number[];
+  ticket_ids?: string[];
 }

@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TicketCreationPane } from './components/TicketCreationPane';
 import { PendingTicketsPane } from './components/PendingTicketsPane';
 import { AnalyzedTicketsPane } from './components/AnalyzedTicketsPane';
 import { LatestAnalysisPane } from './components/LatestAnalysisPane';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ticketApi, analysisApi } from './services/api';
 import { Ticket, TicketCreate, AnalysisRun } from './types';
 
-function App() {
+const AppContent = () => {
+  const { addToast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisRun | null>(null);
   const [loading, setLoading] = useState({
@@ -14,7 +16,6 @@ function App() {
     creating: false,
     analyzing: false
   });
-  const [error, setError] = useState<string | null>(null);
 
   const loadTickets = async () => {
     try {
@@ -22,7 +23,7 @@ function App() {
       const fetchedTickets = await ticketApi.getTickets();
       setTickets(fetchedTickets);
     } catch (err) {
-      setError('Failed to load tickets');
+      addToast('Failed to load tickets', 'error');
     } finally {
       setLoading(prev => ({ ...prev, tickets: false }));
     }
@@ -40,11 +41,11 @@ function App() {
   const handleCreateTickets = async (newTickets: TicketCreate[]) => {
     try {
       setLoading(prev => ({ ...prev, creating: true }));
-      setError(null);
       const createdTickets = await ticketApi.createTickets(newTickets);
       setTickets(prev => [...prev, ...createdTickets]);
+      addToast(`Successfully created ${createdTickets.length} ticket${createdTickets.length > 1 ? 's' : ''}`, 'success');
     } catch (err) {
-      setError('Failed to create tickets');
+      addToast('Failed to create tickets', 'error');
     } finally {
       setLoading(prev => ({ ...prev, creating: false }));
     }
@@ -53,12 +54,13 @@ function App() {
   const handleAnalyze = async () => {
     try {
       setLoading(prev => ({ ...prev, analyzing: true }));
-      setError(null);
       const result = await analysisApi.runAnalysis({});
+      console.log(result)
       setAnalysis(result);
       await loadTickets();
+      addToast(`Analysis complete! Processed ${result.ticket_analyses.length} tickets`, 'success');
     } catch (err) {
-      setError('Failed to run analysis');
+      addToast('Failed to run analysis', 'error');
     } finally {
       setLoading(prev => ({ ...prev, analyzing: false }));
     }
@@ -71,6 +73,8 @@ function App() {
 
   const pendingTickets = tickets.filter(t => t.status === 'incomplete');
   const analyzedTickets = tickets.filter(t => t.status === 'complete');
+  console.log(pendingTickets)
+  console.log(analyzedTickets)
 
   return (
     <div style={{
@@ -84,21 +88,6 @@ function App() {
           Support Ticket Analyst
         </h1>
       </header>
-
-      {error && (
-        <div style={{
-          padding: '0.75rem',
-          backgroundColor: '#f8d7da',
-          color: '#721c24',
-          borderRadius: '6px',
-          marginBottom: '1rem',
-          border: '1px solid #f5c6cb',
-          textAlign: 'center',
-          fontSize: '0.875rem'
-        }}>
-          {error}
-        </div>
-      )}
 
       <div style={{
         display: 'grid',
@@ -140,6 +129,14 @@ function App() {
         </div>
       </div>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 
