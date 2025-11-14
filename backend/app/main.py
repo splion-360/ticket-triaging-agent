@@ -2,10 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import tickets, analysis
-from app.exceptions import BaseAppException
+from app.api import analysis, tickets
 from app.database import engine
+from app.exceptions import BaseAppException
 from app.models import Base
+
 
 Base.metadata.create_all(bind=engine)
 

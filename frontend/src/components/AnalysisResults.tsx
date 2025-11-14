@@ -75,7 +75,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
             }}
           >
             <div style={{ marginBottom: '0.75rem' }}>
-              <strong style={{ fontSize: '1.1em' }}>
+              <strong style={{ fontSize: '1.1em', fontFamily: '"IBM Plex Mono", monospace' }}>
                 #{ta.ticket?.id}: {ta.ticket?.title}
               </strong>
             </div>

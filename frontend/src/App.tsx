@@ -73,7 +73,7 @@ function App() {
       maxWidth: '1200px', 
       margin: '0 auto', 
       padding: '2rem',
-      fontFamily: 'Arial, sans-serif'
+      fontFamily: '"IBM Plex Mono", monospace'
     }}>
       <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
         <h1 style={{ color: '#2c3e50', marginBottom: '0.5rem' }}>

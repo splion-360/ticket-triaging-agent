@@ -34,7 +34,7 @@ export const TicketList: React.FC<TicketListProps> = ({ tickets, loading = false
             }}
           >
             <div style={{ marginBottom: '0.5rem' }}>
-              <strong style={{ fontSize: '1.1em' }}>#{ticket.id}: {ticket.title}</strong>
+              <strong style={{ fontSize: '1.1em', fontFamily: '"IBM Plex Mono", monospace' }}>#{ticket.id}: {ticket.title}</strong>
             </div>
             <div style={{ marginBottom: '0.5rem', color: '#495057' }}>
               {ticket.description}
