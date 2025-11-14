@@ -80,35 +80,23 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
               }}>
                 <h4 style={{
                   margin: 0,
-                  fontSize: '0.875rem',
+                  fontSize: '1.25rem',
                   fontWeight: 600,
                   color: '#2c3e50'
                 }}>
                   Run #{analysis.id}
                 </h4>
-                <span style={{
-                  fontSize: '0.7rem',
-                  color: '#6c757d'
-                }}>
-                  {new Date(analysis.created_at).toLocaleDateString()}
-                </span>
               </div>
               <p style={{
                 margin: '0 0 8px 0',
-                fontSize: '0.75rem',
+                fontSize: '1rem',
                 color: '#495057',
                 lineHeight: 1.4,
                 flex: 1
               }}>
                 {analysis.summary}
               </p>
-              <div style={{
-                fontSize: '0.7rem',
-                color: '#007bff',
-                fontWeight: 600
-              }}>
-                {analysis.ticket_analyses.length} tickets analyzed
-              </div>
+
             </div>
 
             <button
@@ -119,7 +107,7 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '0.75rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: 'inherit',
@@ -133,7 +121,7 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
                 e.currentTarget.style.backgroundColor = '#007bff';
               }}
             >
-              Show Ticket Details
+              Show processed tickets
             </button>
           </div>
         )}

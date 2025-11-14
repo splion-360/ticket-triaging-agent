@@ -100,8 +100,9 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
             </h2>
             <p style={{
               margin: 0,
-              color: '#6c757d',
-              fontSize: '0.875rem'
+              color: '#3b2ea3ff',
+              fontSize: '0.875rem',
+              fontWeight: 600
             }}>
               {analysis.ticket_analyses.length} tickets processed on {new Date(analysis.created_at).toLocaleDateString()}
             </p>
@@ -141,7 +142,7 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px'
+            gap: '8px'
           }}>
             {analysis.ticket_analyses.map((ticketAnalysis) => {
               const ticket = ticketAnalysis.ticket;
@@ -156,8 +157,8 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                   key={ticket.id}
                   style={{
                     border: '1px solid #e9ecef',
-                    borderRadius: '8px',
-                    padding: '16px',
+                    borderRadius: '6px',
+                    padding: '10px',
                     backgroundColor: '#f8f9fa'
                   }}
                 >
@@ -165,40 +166,44 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    marginBottom: '12px'
+                    marginBottom: '8px'
                   }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{
-                        margin: '0 0 6px 0',
-                        fontSize: '1rem',
+                        margin: '0 0 4px 0',
+                        fontSize: '0.9rem',
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
-                        {ticket.title}
+                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 600 }}>(#{ticket.id})</span>
                       </h4>
-                      <p style={{
-                        margin: '0 0 12px 0',
-                        fontSize: '0.875rem',
-                        color: '#6c757d',
-                        lineHeight: 1.4
-                      }}>
-                        {isExpanded
-                          ? ticket.description
-                          : truncateText(ticket.description, 120)
-                        }
-                      </p>
+                      {isExpanded && (
+                        <p style={{
+                          margin: '0 0 8px 0',
+                          fontSize: '0.8rem',
+                          color: '#6c757d',
+                          lineHeight: 1.3,
+                          padding: '6px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '3px',
+                          border: '1px solid #e9ecef'
+                        }}>
+                          <strong>Description:</strong><br />
+                          {ticket.description}
+                        </p>
+                      )}
 
                       {ticketAnalysis.notes && isExpanded && (
                         <div style={{
-                          padding: '12px',
+                          padding: '8px',
                           backgroundColor: '#e9ecef',
-                          borderRadius: '6px',
-                          marginBottom: '12px'
+                          borderRadius: '4px',
+                          marginBottom: '8px'
                         }}>
-                          <strong style={{ fontSize: '0.875rem', color: '#495057' }}>Agent Notes:</strong>
+                          <strong style={{ fontSize: '0.8rem', color: '#495057' }}>Agent Notes:</strong>
                           <p style={{
-                            margin: '6px 0 0 0',
-                            fontSize: '0.875rem',
+                            margin: '4px 0 0 0',
+                            fontSize: '0.8rem',
                             color: '#495057',
                             lineHeight: 1.3
                           }}>
@@ -240,10 +245,10 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                           </span>
                         )}
                         <span style={{
-                          fontSize: '0.7rem',
+                          fontSize: '0.8rem',
                           color: '#6c757d'
                         }}>
-                          #{ticket.id} • {new Date(ticket.created_at).toLocaleDateString()}
+                          • {new Date(ticket.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
