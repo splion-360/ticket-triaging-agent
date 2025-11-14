@@ -14,23 +14,45 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
   const { addToast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [errors, setErrors] = useState({ title: '', description: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const newErrors = { title: '', description: '' };
+    
     if (!title.trim()) {
-      addToast('Please enter a ticket title', 'warning');
-      return;
+      newErrors.title = 'Please enter a ticket title';
     }
     
     if (!description.trim()) {
-      addToast('Please enter a ticket description', 'warning');
+      newErrors.description = 'Please enter a ticket description';
+    }
+    
+    setErrors(newErrors);
+    
+    if (newErrors.title || newErrors.description) {
       return;
     }
     
     await onSubmit([{ title: title.trim(), description: description.trim() }]);
     setTitle('');
     setDescription('');
+    setErrors({ title: '', description: '' });
+  };
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    if (errors.title && value.trim()) {
+      setErrors(prev => ({ ...prev, title: '' }));
+    }
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    if (errors.description && value.trim()) {
+      setErrors(prev => ({ ...prev, description: '' }));
+    }
   };
 
   return (
@@ -68,12 +90,12 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="What is the ticket all about..."
             style={{
               width: 'calc(100% - 16px)',
               padding: '6px 8px',
-              border: '1px solid #e9ecef',
+              border: `1px solid ${errors.title ? '#dc3545' : '#e9ecef'}`,
               borderRadius: '4px',
               fontSize: '0.75rem',
               fontFamily: 'inherit',
@@ -81,10 +103,24 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
               transition: 'border-color 0.2s',
               boxSizing: 'border-box'
             }}
-            onFocus={(e) => e.target.style.borderColor = '#007bff'}
-            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+            onFocus={(e) => {
+              if (!errors.title) e.target.style.borderColor = '#007bff';
+            }}
+            onBlur={(e) => {
+              if (!errors.title) e.target.style.borderColor = '#e9ecef';
+            }}
             required
           />
+          {errors.title && (
+            <span style={{
+              fontSize: '0.7rem',
+              color: '#dc3545',
+              marginTop: '2px',
+              display: 'block'
+            }}>
+              {errors.title}
+            </span>
+          )}
         </div>
         <div style={{ marginBottom: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
           <label style={{
@@ -98,14 +134,14 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
           </label>
           <textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => handleDescriptionChange(e.target.value)}
             placeholder="Describe your ticket..."
             style={{
               width: 'calc(100% - 16px)',
               flex: 1,
               minHeight: '60px',
               padding: '6px 8px',
-              border: '1px solid #e9ecef',
+              border: `1px solid ${errors.description ? '#dc3545' : '#e9ecef'}`,
               borderRadius: '4px',
               fontSize: '0.75rem',
               fontFamily: 'inherit',
@@ -114,15 +150,29 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
               transition: 'border-color 0.2s',
               boxSizing: 'border-box'
             }}
-            onFocus={(e) => e.target.style.borderColor = '#007bff'}
-            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+            onFocus={(e) => {
+              if (!errors.description) e.target.style.borderColor = '#007bff';
+            }}
+            onBlur={(e) => {
+              if (!errors.description) e.target.style.borderColor = '#e9ecef';
+            }}
             required
           />
+          {errors.description && (
+            <span style={{
+              fontSize: '0.7rem',
+              color: '#dc3545',
+              marginTop: '2px',
+              display: 'block'
+            }}>
+              {errors.description}
+            </span>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={loading || !title.trim() || !description.trim()}
+          disabled={loading}
           style={{
             padding: '6px 12px',
             backgroundColor: loading ? '#6c757d' : '#007bff',

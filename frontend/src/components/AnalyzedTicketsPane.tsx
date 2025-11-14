@@ -10,33 +10,17 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
   tickets,
   loading
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const ticketsPerPage = 3;
 
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
-    tickets.forEach(ticket => {
-      if (ticket.category) cats.add(ticket.category);
-    });
-    return Array.from(cats).sort();
-  }, [tickets]);
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (currentPage - 1) * ticketsPerPage;
+    const endIndex = startIndex + ticketsPerPage;
+    return tickets.slice(startIndex, endIndex);
+  }, [tickets, currentPage]);
 
-  const priorities = useMemo(() => {
-    const priors = new Set<string>();
-    tickets.forEach(ticket => {
-      if (ticket.priority) priors.add(ticket.priority);
-    });
-    return Array.from(priors).sort();
-  }, [tickets]);
-
-  const filteredTickets = useMemo(() => {
-    return tickets.filter(ticket => {
-      const categoryMatch = filterCategory === 'all' || ticket.category === filterCategory;
-      const priorityMatch = filterPriority === 'all' || ticket.priority === filterPriority;
-      return categoryMatch && priorityMatch;
-    });
-  }, [tickets, filterCategory, filterPriority]);
+  const totalPages = Math.ceil(tickets.length / ticketsPerPage);
 
   const toggleTicketExpansion = (ticketId: string) => {
     setExpandedTickets(prev => {
@@ -50,10 +34,6 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
     });
   };
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
@@ -97,53 +77,10 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
         Analyzed Tickets ({tickets.length})
       </h2>
 
-      {tickets.length > 0 && (
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '1rem',
-          flexWrap: 'wrap'
-        }}>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            style={{
-              padding: '4px 8px',
-              border: '1px solid #dee2e6',
-              borderRadius: '4px',
-              fontSize: '0.75rem',
-              fontFamily: 'inherit',
-              backgroundColor: 'white'
-            }}
-          >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            style={{
-              padding: '4px 8px',
-              border: '1px solid #dee2e6',
-              borderRadius: '4px',
-              fontSize: '0.75rem',
-              fontFamily: 'inherit',
-              backgroundColor: 'white'
-            }}
-          >
-            <option value="all">All Priorities</option>
-            {priorities.map(priority => (
-              <option key={priority} value={priority}>{priority}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <div style={{
         flex: 1,
-        overflowY: 'auto'
+        overflowY: 'auto',
+        marginBottom: '1rem'
       }}>
         {loading ? (
           <div style={{
@@ -166,20 +103,9 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
           }}>
             No analyzed tickets
           </div>
-        ) : filteredTickets.length === 0 ? (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100px',
-            color: '#6c757d',
-            fontSize: '0.875rem'
-          }}>
-            No tickets match the selected filters
-          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {filteredTickets.map((ticket) => {
+            {paginatedTickets.map((ticket) => {
               const isExpanded = expandedTickets.has(ticket.id);
               const priorityStyle = getPriorityColor(ticket.priority || 'unknown');
               const categoryStyle = getCategoryColor(ticket.category || 'uncategorized');
@@ -199,28 +125,33 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    marginBottom: '8px'
+                    marginBottom: '10px'
                   }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{
-                        margin: '0 0 4px 0',
+                        margin: '0 0 6px 0',
                         fontSize: '0.8rem',
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
-                        {ticket.title}
+                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 800 }}>(#{ticket.id})</span>
                       </h4>
-                      <p style={{
-                        margin: '0 0 8px 0',
-                        fontSize: '0.7rem',
-                        color: '#6c757d',
-                        lineHeight: 1.3
-                      }}>
-                        {isExpanded
-                          ? ticket.description
-                          : truncateText(ticket.description, 50)
-                        }
-                      </p>
+
+                      {isExpanded && (
+                        <p style={{
+                          margin: '0 0 8px 0',
+                          fontSize: '0.7rem',
+                          color: '#6c757d',
+                          lineHeight: 1.3,
+                          padding: '6px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '3px',
+                          border: '1px solid #e9ecef'
+                        }}>
+                          <strong>Description:</strong><br />
+                          {ticket.description}
+                        </p>
+                      )}
                       {ticket.notes && isExpanded && (
                         <div style={{
                           padding: '8px',
@@ -242,8 +173,19 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                       <div style={{
                         display: 'flex',
                         gap: '6px',
-                        flexWrap: 'wrap'
+                        flexWrap: 'wrap',
+                        alignItems: 'center'
                       }}>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          padding: '2px 6px',
+                          backgroundColor: '#d4edda',
+                          color: '#155724',
+                          borderRadius: '4px',
+                          fontWeight: 500
+                        }}>
+                          COMPLETE
+                        </span>
                         {ticket.category && (
                           <span style={{
                             fontSize: '0.7rem',
@@ -270,6 +212,12 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                             {ticket.priority.toUpperCase()}
                           </span>
                         )}
+                        <span style={{
+                          fontSize: '0.8rem',
+                          color: '#6c757d'
+                        }}>
+                          • {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -288,34 +236,62 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                       {isExpanded ? '▼' : '▶'}
                     </button>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      color: '#6c757d'
-                    }}>
-                      #{ticket.id} • {new Date(ticket.created_at).toLocaleDateString()}
-                    </span>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      padding: '2px 6px',
-                      backgroundColor: '#d4edda',
-                      color: '#155724',
-                      borderRadius: '4px',
-                      fontWeight: 500
-                    }}>
-                      ANALYZED
-                    </span>
-                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            style={{
+              padding: '4px 8px',
+              border: '1px solid #dee2e6',
+              backgroundColor: currentPage === 1 ? '#f8f9fa' : 'white',
+              color: currentPage === 1 ? '#6c757d' : '#2c3e50',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit'
+            }}
+          >
+            ◀
+          </button>
+          <span style={{
+            fontSize: '0.75rem',
+            color: '#6c757d',
+            minWidth: '60px',
+            textAlign: 'center'
+          }}>
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: '4px 8px',
+              border: '1px solid #dee2e6',
+              backgroundColor: currentPage === totalPages ? '#f8f9fa' : 'white',
+              color: currentPage === totalPages ? '#6c757d' : '#2c3e50',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit'
+            }}
+          >
+            ▶
+          </button>
+        </div>
+      )}
     </div>
   );
 };

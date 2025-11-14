@@ -153,7 +153,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
-                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 800 }}>(#{ticket.id.slice(0, 8)}...)</span>
+                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 800 }}>(#{ticket.id})</span>
                       </h4>
 
                       {isExpanded && (
