@@ -1,0 +1,30 @@
+[
+  {
+    "title": "Payment processing failed for Enterprise subscription",
+    "description": "Customer ID 45892 is unable to process payment for their Enterprise subscription renewal ($2,499/month). Transaction ID 78945612 shows declined status with error code PY_4011. Customer attempted payment on 3 different cards (ending in 1234, 5678, 9012) over the past 48 hours. Their subscription expires on January 15th, 2024, and they have 847 active user seats that will be affected. Bank confirms cards are valid with sufficient funds ($50K+ available). Customer's billing contact: sarah.johnson@acmecorp.com has tried contacting us 6 times since January 10th."
+  },
+  {
+    "title": "Mobile app crashes during authentication flow",
+    "description": "iOS app version 3.2.1 consistently crashes at login screen after entering credentials. Issue started January 8th, 2024 at approximately 14:30 UTC following deployment build #4829. Crash occurs on iOS 16.2-17.1, affecting iPhone 12, 13, and 14 models. Error log shows EXC_BAD_ACCESS in AuthenticationManager.swift line 247. 23% of iOS users (approximately 1,847 users) cannot access the app. Android version 3.2.0 works normally. Customer reports: 'Tried clearing cache (iOS Settings > General > iPhone Storage), reinstalling app 3 times, and restarting device. Nothing works.'"
+  },
+  {
+    "title": "API rate limiting blocking enterprise integration workflows",
+    "description": "Current API rate limit of 100 requests/minute insufficient for enterprise customer integrations requiring batch operations. Customer 'TechCorp Solutions' (Account ID: ENT-7891, $25K/month) needs to sync 5,000+ tickets daily from their CRM system. Bulk import job requires 847 API calls taking 8.47 minutes minimum due to rate limiting. Integration timeouts after 5 minutes causing partial data imports. Rate limit headers: X-RateLimit-Limit: 100, X-RateLimit-Remaining: 0, X-RateLimit-Reset: 60. Competitor Zendesk offers 200 requests/minute for similar tier. API endpoint /v2/tickets/bulk accepts maximum 50 tickets per request. Customer's integration runs 4 times daily (6AM, 12PM, 6PM, 12AM EST) but only 2 succeed. Business impact: delayed ticket resolution, incomplete reporting, frustrated enterprise customers threatening contract non-renewal."
+  },
+  {
+    "title": "Email notification system failing to deliver ticket updates",
+    "description": "Email notifications for ticket status changes not reaching 43% of users since email service migration on January 9th, 2024. Email delivery logs show 2,847 failed deliveries out of 6,623 attempts over 120-hour period. SMTP authentication failing with error 535 'Authentication credentials invalid' for SMTP server mail.service.com port 587. Email queue backlog: 1,456 pending notifications, oldest from January 10th 08:34 UTC. Affected notification types: ticket assignments, status updates, customer replies, and escalation alerts. Gmail recipients: 67% delivery success, Outlook: 34% success, Corporate domains: 23% success. DNS SPF record: 'v=spf1 include:sendgrid.net ~all' may need updating. Customer satisfaction scores dropped 1.8 points since email issues began."
+  },
+  {
+    "title": "File upload size limit blocking customer documentation attachments",
+    "description": "File upload system rejecting attachments larger than 10MB causing customer frustration with documentation sharing. Current implementation uses multer middleware with 10MB hard limit in server.js line 67. Customer requests: architectural diagrams (average 24MB), video recordings (45-120MB), database dumps (156MB), and system logs (up to 500MB). 234 upload failures recorded in past 14 days with error 'File size exceeds maximum allowed size of 10485760 bytes'. AWS S3 bucket configuration supports up to 5TB per object. Competitors allow: Zendesk (50MB), ServiceNow (25MB), Freshdesk (15MB). Infrastructure cost analysis: increasing to 100MB limit would cost additional $47/month in S3 storage. Technical implementation requires updating: client-side validation, server middleware, and database schema for file_size column."
+  },
+  {
+    "title": "Dashboard performance severely degraded with loading times over 30 seconds",
+    "description": "Main dashboard at /dashboard experiencing severe performance issues with average load time 34.7 seconds for accounts with 1000+ tickets. Performance monitoring shows: initial HTML response 2.1s, API calls 18.3s, JavaScript execution 8.9s, DOM rendering 5.4s. Database queries identified as bottleneck: 47 separate SQL queries executed per dashboard load, including inefficient N+1 query pattern on tickets-users relationship. Redis cache hit ratio dropped to 23% (target: 85%) after cache expiration policy changed from 1 hour to 15 minutes. Bundle size increased 340% to 2.7MB after adding new chart libraries. Largest customers affected: Account IDs 1001-1015 managing 15,000+ tickets each. User engagement metrics: 45% bounce rate on dashboard (previously 8%), session duration decreased 67%. CDN performance: 89% cache hit ratio, 156ms average response time globally."
+  },
+  {
+    "title": "Invoice PDF generation creating corrupted files for accounting integration",
+    "description": "Automated invoice generation producing corrupted PDF files preventing accounting system integration since library upgrade on January 8th, 2024. PDF library puppeteer upgraded from v19.4.1 to v21.6.1 causing compatibility issues with HTML-to-PDF conversion. Corruption symptoms: files open as blank pages, 'PDF structure is damaged' error in Adobe Reader, 0-byte file downloads in 34% of cases. Monthly billing run on January 1st generated 1,247 invoices, 423 reported as corrupted. Accounting software QuickBooks Enterprise cannot import damaged PDFs affecting reconciliation for $2.3M in monthly recurring revenue. PDF metadata missing: /Title, /Author, /CreationDate fields empty. File size inconsistency: valid PDFs average 145KB, corrupted files 23KB. Temporary workaround: manual PDF regeneration taking 3-4 hours per billing cycle."
+  }
+]

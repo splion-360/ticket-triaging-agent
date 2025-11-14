@@ -41,35 +41,51 @@ def create_graph():
     graph.add_edge("save_summary", END)
 
     graph.set_entry_point("fetch")
+
     logger.info("Graph creation COMPLETE!", "GREEN")
 
     return graph.compile()
 
 
-async def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
+async def run_graph(
+    db: Session,
+    analysis_run_id: str,
+    ticket_ids: list = None,
+) -> AnalysisRun:
     try:
-        logger.info("Analysis in progress...", "WHITE")
-        analysis_run = AnalysisRun(summary="Analysis in progress...")
+        logger.info("Starting analysis workflow...", "WHITE")
+
+        analysis_run = AnalysisRun(
+            id=analysis_run_id, summary="Analysis in progress..."
+        )
         db.add(analysis_run)
         db.commit()
         db.refresh(analysis_run)
 
         initial_state = AnalysisState(
-            analysis_run_id=analysis_run.id,
+            analysis_run_id=analysis_run_id,
+            ticket_ids=ticket_ids,
             tickets=[],
             results=[],
             summary="",
         )
 
-        graph = create_graph()
+        graph = create_graph()  # Initialize a LangGraph
 
         if not glob.glob("assets/*.png"):
             visualize_graph(graph)
 
         await graph.ainvoke(initial_state)
 
-        db.refresh(analysis_run)
-        return analysis_run
+        analysis_run = (
+            db.query(AnalysisRun)
+            .filter(AnalysisRun.id == analysis_run_id)
+            .first()
+        )
+        if analysis_run:
+            return analysis_run
+        else:
+            raise AnalysisError("No valid analysis results were produced")
 
     except Exception as e:
         logger.error(e)

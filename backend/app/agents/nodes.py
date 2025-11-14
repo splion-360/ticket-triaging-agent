@@ -1,8 +1,7 @@
 import asyncio
 import json
-import operator
 import re
-from typing import Annotated, Any, TypedDict
+from typing import Any, TypedDict
 
 from pydantic import BaseModel
 
@@ -31,12 +30,11 @@ class TicketStructuredOutput(BaseModel):
 
 
 class AnalysisState(TypedDict):
-    analysis_run_id: int
+    analysis_run_id: str
+    ticket_ids: list[str] | None
     tickets: list[Ticket]
-    results: Annotated[list[dict[str, Any]], operator.add]
+    results: list[dict[str, Any]]
     summary: str
-    classification_complete: bool
-    summary_complete: bool
 
 
 def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
@@ -46,22 +44,25 @@ def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
     try:
         db = get_db_session()
 
-        analysis_run = (
-            db.query(AnalysisRun)
-            .filter(AnalysisRun.id == state["analysis_run_id"])
-            .first()
-        )
+        ticket_ids = state.get("ticket_ids")
+        logger.info(f"Ticket IDs: {ticket_ids}", "CYAN")
 
-        if not analysis_run:
-            raise AnalysisError(
-                f"Analysis run {state['analysis_run_id']} not found"
+        if ticket_ids:
+            tickets = (
+                db.query(Ticket)
+                .filter(Ticket.id.in_(ticket_ids))
+                .filter(Ticket.status == "incomplete")
+                .all()
             )
 
-        tickets = db.query(Ticket).filter(Ticket.status == "incomplete").all()
+        else:
+            tickets = (
+                db.query(Ticket).filter(Ticket.status == "incomplete").all()
+            )
 
-        state["tickets"] = tickets
+        logger.info(f"Fetched {len(tickets)} tickets for processing")
         db.close()
-        return state
+        return {"tickets": tickets}
 
     except Exception as e:
         raise AnalysisError(f"Failed to fetch tickets: {str(e)}") from e
@@ -71,9 +72,7 @@ async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
         results = await get_analysis(tickets)
-        state["results"] = results
-        state["classification_complete"] = True
-        return state
+        return {"results": results}
 
     except Exception as e:
         raise AnalysisError(f"Failed to classify tickets: {str(e)}") from e
@@ -90,18 +89,15 @@ async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
                 f"Trouble with the provided client. Falling back to default summary: {e}"
             )
             summary = default_summarizer(tickets, state["results"])
-        state["summary"] = summary
-        state["summary_complete"] = True
-        return state
+        return {"summary": summary}
 
     except Exception as e:
         raise AnalysisError(f"Failed to summarize tickets: {str(e)}") from e
 
 
-def node_save_classification(state: AnalysisState) -> AnalysisState:
+def node_save_classification(state: AnalysisState) -> None:
     db = get_db_session()
     try:
-
         for i, ticket in enumerate(state["tickets"]):
 
             result = state["results"][i]
@@ -119,8 +115,8 @@ def node_save_classification(state: AnalysisState) -> AnalysisState:
             db.add(ticket_analysis)
 
         db.commit()
-        logger.info("Classification results saved successfully", "MAGENTA")
-        return state
+        logger.info("Classification results saved successfully", "WHITE")
+        return
 
     except Exception as e:
         db.rollback()
@@ -132,20 +128,28 @@ def node_save_classification(state: AnalysisState) -> AnalysisState:
         db.close()
 
 
-def node_save_summary(state: AnalysisState) -> AnalysisState:
+def node_save_summary(state: AnalysisState) -> None:
+
     db = get_db_session()
     try:
+        if not state["summary"]:
+            logger.warning("No summary generated, skipping summary save")
+            return
+
         analysis_run = (
             db.query(AnalysisRun)
             .filter(AnalysisRun.id == state["analysis_run_id"])
             .first()
         )
 
-        analysis_run.summary = state["summary"]
+        if analysis_run:
+            analysis_run.summary = state["summary"]
+            db.commit()
+            logger.info("Summary saved successfully", "WHITE")
+        else:
+            logger.error("Analysis run not found for summary save")
 
-        db.commit()
-        logger.info("Summary saved successfully", "MAGENTA")
-        return state
+        return
 
     except Exception as e:
         db.rollback()
@@ -190,7 +194,8 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
                     "notes": parsed.notes,
                 }
                 logger.info(
-                    f"Analyzed ticket {ticket.id} - Category: {result['category']}"
+                    f"Analyzed ticket {ticket.id} - Category: {result['category']}",
+                    "MAGENTA",
                 )
                 return result
 
@@ -213,7 +218,8 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
                     json_content = match.group(1) if match else data.strip()
                     parsed_data = json.loads(json_content)
                     logger.info(
-                        f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}"
+                        f"Analyzed ticket {ticket.id} - Category: {parsed_data.get('category', 'unknown')}",
+                        "BRIGHT_YELLOW",
                     )
                     return parsed_data
 
@@ -257,7 +263,7 @@ async def get_summary(tickets: list[Ticket]) -> str:
             max_tokens=SUMMARY_TOKENS,
         )
         data = response.choices[0].message.content.strip()
-        logger.info(f"Preview of response from summary agent: {data[:100]}")
+        logger.info(f"Preview of response from summary agent: {data[:500]}")
         return data
 
     except Exception as e:

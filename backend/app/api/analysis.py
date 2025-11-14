@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -21,8 +23,8 @@ router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 @router.post("/", response_model=AnalysisRunResponse)
 async def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
     try:
-        # analysis_run_id = str(uuid.uuid4())
-        analysis_run = await run_graph(db, request.ticket_ids)
+        analysis_run_id = str(uuid.uuid4())
+        analysis_run = await run_graph(db, analysis_run_id, request.ticket_ids)
 
         ticket_analyses = (
             db.query(TicketAnalysis)
