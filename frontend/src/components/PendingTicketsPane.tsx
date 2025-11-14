@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Ticket } from '../types';
+import { InfinityLoader } from '../components/LoadingSpinner';
 
 interface PendingTicketsPaneProps {
   tickets: Ticket[];
@@ -16,7 +17,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
-  const ticketsPerPage = 4;
+  const ticketsPerPage = 3;
 
   const paginatedTickets = useMemo(() => {
     const startIndex = (currentPage - 1) * ticketsPerPage;
@@ -36,11 +37,6 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
       }
       return newSet;
     });
-  };
-
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
   };
 
   return (
@@ -104,7 +100,12 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
         overflowY: 'auto',
         marginBottom: '1rem'
       }}>
-        {loading ? (
+        {analyzing ? (
+          <InfinityLoader
+            size={32}
+            message="Analyzing tickets..."
+          />
+        ) : loading ? (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -143,18 +144,18 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    marginBottom: '8px'
+                    marginBottom: '10px'
                   }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{
-                        margin: '0 0 4px 0',
+                        margin: '0 0 6px 0',
                         fontSize: '0.9rem',
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
-                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 600 }}>({ticket.id.slice(0, 8)})</span>
+                        {ticket.title} <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: 800 }}>(#{ticket.id.slice(0, 8)}...)</span>
                       </h4>
-                      
+
                       {isExpanded && (
                         <p style={{
                           margin: '0 0 8px 0',
@@ -170,7 +171,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                           {ticket.description}
                         </p>
                       )}
-                      
+
                       <div style={{
                         display: 'flex',
                         gap: '8px',
@@ -181,11 +182,11 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                           fontSize: '0.7rem',
                           padding: '2px 6px',
                           backgroundColor: '#fff3cd',
-                          color: '#856404',
+                          color: '#590808ff',
                           borderRadius: '4px',
                           fontWeight: 500
                         }}>
-                          PENDING
+                          INCOMPLETE
                         </span>
                         <span style={{
                           fontSize: '0.8rem',
@@ -209,7 +210,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                         borderRadius: '4px'
                       }}
                     >
-                      {isExpanded ? '▲ Less' : '▼ More'}
+                      {isExpanded ? '▼ Less' : '▶ More'}
                     </button>
                   </div>
                 </div>

@@ -11,7 +11,7 @@ from app.exceptions import AnalysisError
 from app.models import AnalysisRun
 
 
-def create_analysis_workflow():
+def create_workflow():
     workflow = StateGraph(AnalysisState)
 
     workflow.add_node("fetch", fetch_tickets_node)
@@ -26,7 +26,8 @@ def create_analysis_workflow():
 
     return workflow.compile()
 
-def run_ticket_analysis(db: Session, ticket_ids: list = None) -> AnalysisRun:
+
+def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
     try:
         analysis_run = AnalysisRun(summary="Analysis in progress...")
         db.add(analysis_run)
@@ -37,10 +38,10 @@ def run_ticket_analysis(db: Session, ticket_ids: list = None) -> AnalysisRun:
             analysis_run_id=analysis_run.id,
             tickets=[],
             individual_results=[],
-            batch_summary=""
+            batch_summary="",
         )
 
-        workflow = create_analysis_workflow()
+        workflow = create_workflow()
         final_state = workflow.invoke(initial_state)
 
         db.refresh(analysis_run)
@@ -48,4 +49,4 @@ def run_ticket_analysis(db: Session, ticket_ids: list = None) -> AnalysisRun:
 
     except Exception as e:
         db.rollback()
-        raise AnalysisError(f"Analysis workflow failed: {str(e)}")
+        raise AnalysisError(f"Analysis workflow failed: {str(e)}") from e

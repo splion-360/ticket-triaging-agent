@@ -262,7 +262,7 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                         borderRadius: '4px'
                       }}
                     >
-                      {isExpanded ? '▲ Less' : '▼ More'}
+                      {isExpanded ? '▼ Less' : '▶ More'}
                     </button>
                   </div>
                 </div>

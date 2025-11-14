@@ -285,7 +285,7 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                         marginLeft: '8px'
                       }}
                     >
-                      {isExpanded ? '▲' : '▼'}
+                      {isExpanded ? '▼' : '▶'}
                     </button>
                   </div>
                   <div style={{

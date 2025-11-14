@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.agents import run_ticket_analysis
+from app.agents import run_graph
 from app.database import get_db
 from app.exceptions import AnalysisRunNotFoundError, DatabaseError
 from app.models import AnalysisRun, Ticket, TicketAnalysis
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 @router.post("/", response_model=AnalysisRunResponse)
 def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
     try:
-        analysis_run = run_ticket_analysis(db, request.ticket_ids)
+        analysis_run = run_graph(db, request.ticket_ids)
 
         ticket_analyses = (
             db.query(TicketAnalysis)
@@ -29,18 +29,19 @@ def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
         analysis_responses = []
         for ta in ticket_analyses:
             ticket = db.query(Ticket).filter(Ticket.id == ta.ticket_id).first()
-            analysis_responses.append(
-                TicketAnalysisResponse(
-                    id=ta.id,
-                    created_at=ta.created_at,
-                    analysis_run_id=ta.analysis_run_id,
-                    ticket_id=ta.ticket_id,
-                    category=ta.category,
-                    priority=ta.priority,
-                    notes=ta.notes,
-                    ticket=ticket,
+            if ticket:
+                analysis_responses.append(
+                    TicketAnalysisResponse(
+                        id=ta.id,
+                        created_at=ta.created_at,
+                        analysis_run_id=ta.analysis_run_id,
+                        ticket_id=ta.ticket_id,
+                        category=ta.category,
+                        priority=ta.priority,
+                        notes=ta.notes,
+                        ticket=ticket,
+                    )
                 )
-            )
 
         return AnalysisRunResponse(
             id=analysis_run.id,

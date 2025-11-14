@@ -55,6 +55,7 @@ const AppContent = () => {
     try {
       setLoading(prev => ({ ...prev, analyzing: true }));
       const result = await analysisApi.runAnalysis({});
+      console.log(result)
       setAnalysis(result);
       await loadTickets();
       addToast(`Analysis complete! Processed ${result.ticket_analyses.length} tickets`, 'success');
@@ -72,6 +73,8 @@ const AppContent = () => {
 
   const pendingTickets = tickets.filter(t => t.status === 'incomplete');
   const analyzedTickets = tickets.filter(t => t.status === 'complete');
+  console.log(pendingTickets)
+  console.log(analyzedTickets)
 
   return (
     <div style={{

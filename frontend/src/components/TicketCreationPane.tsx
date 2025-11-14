@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TicketCreate } from '../types';
+import { useToast } from '../contexts/ToastContext';
 
 interface TicketCreationPaneProps {
   onSubmit: (tickets: TicketCreate[]) => Promise<void>;
@@ -10,12 +11,23 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
   onSubmit,
   loading
 }) => {
+  const { addToast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    
+    if (!title.trim()) {
+      addToast('Please enter a ticket title', 'warning');
+      return;
+    }
+    
+    if (!description.trim()) {
+      addToast('Please enter a ticket description', 'warning');
+      return;
+    }
+    
     await onSubmit([{ title: title.trim(), description: description.trim() }]);
     setTitle('');
     setDescription('');
