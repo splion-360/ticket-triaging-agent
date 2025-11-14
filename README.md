@@ -74,7 +74,7 @@ ticket-triaging-agent/
 
 The system uses a parallel processing workflow implemented with LangGraph:
 
-![Workflow Graph](/backend/assets/workflow_graph.png)
+![Workflow Graph](backend/assets/workflow_graph.png)
 
 
 **State Management:** LangGraph maintains shared state (`AnalysisState`) containing ticket data, analysis results, and summary across all nodes.
