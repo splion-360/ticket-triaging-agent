@@ -1,3 +1,4 @@
+import glob
 import os
 
 from langgraph.graph import END, StateGraph
@@ -8,7 +9,8 @@ from app.agents.nodes import (
     AnalysisState,
     node_classify_tickets,
     node_fetch_tickets,
-    node_save_results,
+    node_save_classification,
+    node_save_summary,
     node_summarize_tickets,
 )
 from app.config import setup_logger
@@ -26,12 +28,17 @@ def create_graph():
     graph.add_node("fetch", node_fetch_tickets)
     graph.add_node("classify", node_classify_tickets)
     graph.add_node("summarize", node_summarize_tickets)
-    graph.add_node("save", node_save_results)
+    graph.add_node("save_classification", node_save_classification)
+    graph.add_node("save_summary", node_save_summary)
 
     graph.add_edge("fetch", "classify")
-    graph.add_edge("classify", "summarize")
-    graph.add_edge("summarize", "save")
-    graph.add_edge("save", END)
+    graph.add_edge("fetch", "summarize")
+
+    graph.add_edge("classify", "save_classification")
+    graph.add_edge("summarize", "save_summary")
+
+    graph.add_edge("save_classification", END)
+    graph.add_edge("save_summary", END)
 
     graph.set_entry_point("fetch")
     logger.info("Graph creation COMPLETE!", "GREEN")
@@ -56,7 +63,7 @@ async def run_graph(db: Session, ticket_ids: list = None) -> AnalysisRun:
 
         graph = create_graph()
 
-        if not os.path.exists("assets/") or not os.listdir("assets/"):
+        if not glob.glob("assets/*.png"):
             visualize_graph(graph)
 
         await graph.ainvoke(initial_state)

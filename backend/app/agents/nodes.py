@@ -1,11 +1,12 @@
 import asyncio
 import json
+import operator
 import re
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
 
 from pydantic import BaseModel
 
-from app.agents.fallback import categorize_ticket, generate_batch_summary
+from app.agents.defaults import default_categorizer, default_summarizer
 from app.config import (
     MAX_CONCURRENT_REQUESTS,
     MAX_TOKENS,
@@ -32,8 +33,10 @@ class TicketStructuredOutput(BaseModel):
 class AnalysisState(TypedDict):
     analysis_run_id: int
     tickets: list[Ticket]
-    results: list[dict[str, Any]]
+    results: Annotated[list[dict[str, Any]], operator.add]
     summary: str
+    classification_complete: bool
+    summary_complete: bool
 
 
 def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
@@ -67,16 +70,9 @@ def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
 async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
-
-        try:
-            results = await get_analysis(tickets)
-        except Exception as e:
-            logger.warning(
-                f"Trouble with the provided client. Falling back to non-LLM generated response: {e}"
-            )
-            results = [categorize_ticket(ticket) for ticket in tickets]
-
+        results = await get_analysis(tickets)
         state["results"] = results
+        state["classification_complete"] = True
         return state
 
     except Exception as e:
@@ -91,34 +87,26 @@ async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
             summary = await get_summary(tickets)
         except Exception as e:
             logger.warning(
-                f"Trouble with the provided client. Falling back to non-LLM generated summary: {e}"
+                f"Trouble with the provided client. Falling back to default summary: {e}"
             )
-            summary = generate_batch_summary(tickets, state.get("results", []))
-
+            summary = default_summarizer(tickets, state["results"])
         state["summary"] = summary
+        state["summary_complete"] = True
         return state
 
     except Exception as e:
         raise AnalysisError(f"Failed to summarize tickets: {str(e)}") from e
 
 
-def node_save_results(state: AnalysisState) -> AnalysisState:
+def node_save_classification(state: AnalysisState) -> AnalysisState:
     db = get_db_session()
     try:
-        analysis_run = (
-            db.query(AnalysisRun)
-            .filter(AnalysisRun.id == state["analysis_run_id"])
-            .first()
-        )
-
-        analysis_run.summary = state["summary"]
 
         for i, ticket in enumerate(state["tickets"]):
+
             result = state["results"][i]
 
-            merged_ticket = db.merge(
-                ticket
-            )  # Merge the ticket to ensure it's tracked by current session! Interesting :)
+            merged_ticket = db.merge(ticket)
             merged_ticket.status = "complete"
 
             ticket_analysis = TicketAnalysis(
@@ -131,11 +119,37 @@ def node_save_results(state: AnalysisState) -> AnalysisState:
             db.add(ticket_analysis)
 
         db.commit()
+        logger.info("Classification results saved successfully", "MAGENTA")
         return state
 
     except Exception as e:
         db.rollback()
-        raise AnalysisError(f"Failed to save results: {str(e)}") from e
+        raise AnalysisError(
+            f"Failed to save classification results: {str(e)}"
+        ) from e
+
+    finally:
+        db.close()
+
+
+def node_save_summary(state: AnalysisState) -> AnalysisState:
+    db = get_db_session()
+    try:
+        analysis_run = (
+            db.query(AnalysisRun)
+            .filter(AnalysisRun.id == state["analysis_run_id"])
+            .first()
+        )
+
+        analysis_run.summary = state["summary"]
+
+        db.commit()
+        logger.info("Summary saved successfully", "MAGENTA")
+        return state
+
+    except Exception as e:
+        db.rollback()
+        raise AnalysisError(f"Failed to save summary: {str(e)}") from e
     finally:
         db.close()
 
@@ -144,78 +158,70 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
     async def analyze_single_ticket(ticket: Ticket) -> dict[str, Any]:
+
         async with semaphore:
+
+            client = get_async_openai_client()
+            prompt = f"""
+            Analyze this support ticket and provide categorization:
+
+            Ticket: Title: {ticket.title} | Description: {ticket.description}
+
+            For this ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
+            Respond with valid JSON object: {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
+            """
+
             try:
-                client = get_async_openai_client()
-                prompt = f"""
-                Analyze this support ticket and provide categorization:
+                response = await client.chat.completions.parse(
+                    model=MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=TEMPERATURE,
+                    max_tokens=MAX_TOKENS,
+                    response_format=TicketStructuredOutput,
+                )
 
-                Ticket: Title: {ticket.title} | Description: {ticket.description}
+                if response.choices[0].message.refusal:
+                    raise Exception("Refusal for structured output parsing")
 
-                For this ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
-                Respond with valid JSON object: {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
-                """
-
-                try:
-                    response = await client.chat.completions.parse(
-                        model=MODEL,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=TEMPERATURE,
-                        max_tokens=MAX_TOKENS,
-                        response_format=TicketStructuredOutput,
-                    )
-
-                    if response.choices[0].message.refusal:
-                        raise Exception("Refusal for structured output parsing")
-
-                    parsed = response.choices[0].message.parsed
-                    result = {
-                        "category": parsed.category,
-                        "priority": parsed.priority,
-                        "notes": parsed.notes,
-                    }
-                    logger.info(
-                        f"Analyzed ticket {ticket.id[:8]}... - Category: {result['category']}"
-                    )
-                    return result
-
-                except Exception as e:
-                    logger.warning(
-                        f"Structured Output passign failed. Falling back to manual parser: {e}"
-                    )
-                    response = await client.chat.completions.create(
-                        model=MODEL,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=TEMPERATURE,
-                        max_tokens=MAX_TOKENS,
-                    )
-
-                    data = response.choices[0].message.content
-                    if not data or not data.strip():
-                        return categorize_ticket(ticket)
-
-                    json_match = re.search(
-                        r"```(?:json)?\s*(.*?)\s*```", data, re.DOTALL
-                    )
-                    json_content = (
-                        json_match.group(1) if json_match else data.strip()
-                    )
-
-                    try:
-                        parsed_data = json.loads(json_content)
-                        logger.info(
-                            f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}"
-                        )
-                        return parsed_data
-
-                    except json.JSONDecodeError as e:
-                        raise e
+                parsed = response.choices[0].message.parsed
+                result = {
+                    "category": parsed.category,
+                    "priority": parsed.priority,
+                    "notes": parsed.notes,
+                }
+                logger.info(
+                    f"Analyzed ticket {ticket.id} - Category: {result['category']}"
+                )
+                return result
 
             except Exception as e:
                 logger.warning(
-                    f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
+                    f"Structured Output passign failed. Falling back to manual parser: {e}"
                 )
-                return categorize_ticket(ticket)
+                response = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=TEMPERATURE,
+                    max_tokens=MAX_TOKENS,
+                )
+
+                data = response.choices[0].message.content
+                try:
+                    match = re.search(
+                        r"```(?:json)?\s*(.*?)\s*```", data, re.DOTALL
+                    )
+                    json_content = match.group(1) if match else data.strip()
+                    parsed_data = json.loads(json_content)
+                    logger.info(
+                        f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}"
+                    )
+                    return parsed_data
+
+                except Exception as e:
+                    logger.warning(
+                        f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
+                    )
+                    return default_categorizer(ticket)
 
     tasks = [analyze_single_ticket(ticket) for ticket in tickets]
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -251,7 +257,7 @@ async def get_summary(tickets: list[Ticket]) -> str:
             max_tokens=SUMMARY_TOKENS,
         )
         data = response.choices[0].message.content.strip()
-        logger.info(f"Preview of response from summary agent: {data[:50]}")
+        logger.info(f"Preview of response from summary agent: {data[:100]}")
         return data
 
     except Exception as e:
