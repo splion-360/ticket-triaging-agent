@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { TicketCreate } from '../types';
-import { useToast } from '../contexts/ToastContext';
 
 interface TicketCreationPaneProps {
   onSubmit: (tickets: TicketCreate[]) => Promise<void>;

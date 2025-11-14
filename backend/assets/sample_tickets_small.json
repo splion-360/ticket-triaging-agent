@@ -1,0 +1,10 @@
+[
+  {
+    "title": "Payment processing failed for Enterprise subscription",
+    "description": "Customer ID 45892 is unable to process payment for their Enterprise subscription renewal ($2,499/month). Transaction ID 78945612 shows declined status with error code PY_4011. Customer attempted payment on 3 different cards (ending in 1234, 5678, 9012) over the past 48 hours. Their subscription expires on January 15th, 2024, and they have 847 active user seats that will be affected. Bank confirms cards are valid with sufficient funds ($50K+ available). Customer's billing contact: sarah.johnson@acmecorp.com has tried contacting us 6 times since January 10th."
+  },
+  {
+    "title": "Mobile app crashes during authentication flow",
+    "description": "iOS app version 3.2.1 consistently crashes at login screen after entering credentials. Issue started January 8th, 2024 at approximately 14:30 UTC following deployment build #4829. Crash occurs on iOS 16.2-17.1, affecting iPhone 12, 13, and 14 models. Error log shows EXC_BAD_ACCESS in AuthenticationManager.swift line 247. 23% of iOS users (approximately 1,847 users) cannot access the app. Android version 3.2.0 works normally. Customer reports: 'Tried clearing cache (iOS Settings > General > iPhone Storage), reinstalling app 3 times, and restarting device. Nothing works.'"
+  }
+]

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Ticket } from '../types';
-import { InfinityLoader } from '../components/LoadingSpinner';
 
 interface PendingTicketsPaneProps {
   tickets: Ticket[];
@@ -101,10 +100,36 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
         marginBottom: '1rem'
       }}>
         {analyzing ? (
-          <InfinityLoader
-            size={32}
-            message="Analyzing tickets..."
-          />
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '150px',
+            gap: '12px'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #e9ecef',
+              borderTop: '4px solid #007bff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div style={{
+              color: '#6c757d',
+              fontSize: '0.875rem',
+              fontWeight: 500
+            }}>
+              Analyzing tickets...
+            </div>
+            <style>{`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
         ) : loading ? (
           <div style={{
             display: 'flex',

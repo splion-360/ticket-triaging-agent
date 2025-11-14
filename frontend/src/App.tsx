@@ -56,7 +56,6 @@ const AppContent = () => {
       setLoading(prev => ({ ...prev, analyzing: true }));
       const result = await analysisApi.runAnalysis({});
       console.log(result)
-      setAnalysis(result);
       await loadTickets();
       addToast(`Analysis complete! Processed ${result.ticket_analyses.length} tickets`, 'success');
     } catch (err) {
@@ -124,7 +123,8 @@ const AppContent = () => {
         <div style={{ gridColumn: '2', gridRow: '2' }}>
           <LatestAnalysisPane
             analysis={analysis}
-            loading={loading.analyzing}
+            loading={loading.analyzing && !analysis}
+            onRefresh={loadLatestAnalysis}
           />
         </div>
       </div>
