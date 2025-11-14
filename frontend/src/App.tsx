@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TicketForm } from './components/TicketForm';
-import { TicketList } from './components/TicketList';
-import { AnalysisButton } from './components/AnalysisButton';
-import { AnalysisResults } from './components/AnalysisResults';
+import { TicketCreationPane } from './components/TicketCreationPane';
+import { PendingTicketsPane } from './components/PendingTicketsPane';
+import { AnalyzedTicketsPane } from './components/AnalyzedTicketsPane';
+import { LatestAnalysisPane } from './components/LatestAnalysisPane';
 import { ticketApi, analysisApi } from './services/api';
 import { Ticket, TicketCreate, AnalysisRun } from './types';
 
@@ -56,6 +56,7 @@ function App() {
       setError(null);
       const result = await analysisApi.runAnalysis({});
       setAnalysis(result);
+      await loadTickets();
     } catch (err) {
       setError('Failed to run analysis');
     } finally {
@@ -68,55 +69,76 @@ function App() {
     loadLatestAnalysis();
   }, []);
 
+  const pendingTickets = tickets.filter(t => t.status === 'incomplete');
+  const analyzedTickets = tickets.filter(t => t.status === 'complete');
+
   return (
-    <div style={{ 
-      maxWidth: '1200px', 
-      margin: '0 auto', 
-      padding: '2rem',
-      fontFamily: '"IBM Plex Mono", monospace'
+    <div style={{
+      minHeight: '100vh',
+      padding: '1rem',
+      fontFamily: '"IBM Plex Mono", monospace',
+      backgroundColor: '#f8f9fa'
     }}>
-      <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
-        <h1 style={{ color: '#2c3e50', marginBottom: '0.5rem' }}>
-          🎫 Support Ticket Analyst
+      <header style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+        <h1 style={{ color: '#2c3e50', marginBottom: '0.1rem', fontSize: '2rem', marginTop: '0.3rem' }}>
+          Support Ticket Analyst
         </h1>
-        <p style={{ color: '#7f8c8d', fontSize: '1.1rem' }}>
-          AI-powered ticket categorization and priority analysis
-        </p>
       </header>
 
       {error && (
         <div style={{
-          padding: '1rem',
+          padding: '0.75rem',
           backgroundColor: '#f8d7da',
           color: '#721c24',
-          borderRadius: '4px',
+          borderRadius: '6px',
           marginBottom: '1rem',
-          border: '1px solid #f5c6cb'
+          border: '1px solid #f5c6cb',
+          textAlign: 'center',
+          fontSize: '0.875rem'
         }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
-      <TicketForm 
-        onSubmit={handleCreateTickets} 
-        loading={loading.creating}
-      />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '50% 50%',
+        gridTemplateRows: '50% 50%',
+        gap: '1rem',
+        height: 'calc(100vh - 120px)',
+        maxWidth: '1450px',
+        margin: '0 auto'
+      }}>
+        <div style={{ gridColumn: '1', gridRow: '1' }}>
+          <TicketCreationPane
+            onSubmit={handleCreateTickets}
+            loading={loading.creating}
+          />
+        </div>
 
-      <TicketList 
-        tickets={tickets} 
-        loading={loading.tickets}
-      />
+        <div style={{ gridColumn: '2', gridRow: '1' }}>
+          <PendingTicketsPane
+            tickets={pendingTickets}
+            loading={loading.tickets}
+            onAnalyze={handleAnalyze}
+            analyzing={loading.analyzing}
+          />
+        </div>
 
-      <AnalysisButton
-        onAnalyze={handleAnalyze}
-        loading={loading.analyzing}
-        ticketCount={tickets.length}
-      />
+        <div style={{ gridColumn: '1', gridRow: '2' }}>
+          <AnalyzedTicketsPane
+            tickets={analyzedTickets}
+            loading={loading.tickets}
+          />
+        </div>
 
-      <AnalysisResults
-        analysis={analysis}
-        loading={loading.analyzing}
-      />
+        <div style={{ gridColumn: '2', gridRow: '2' }}>
+          <LatestAnalysisPane
+            analysis={analysis}
+            loading={loading.analyzing}
+          />
+        </div>
+      </div>
     </div>
   );
 }

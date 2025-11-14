@@ -1,0 +1,139 @@
+import React, { useState } from 'react';
+import { TicketCreate } from '../types';
+
+interface TicketCreationPaneProps {
+  onSubmit: (tickets: TicketCreate[]) => Promise<void>;
+  loading: boolean;
+}
+
+export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
+  onSubmit,
+  loading
+}) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()) return;
+    await onSubmit([{ title: title.trim(), description: description.trim() }]);
+    setTitle('');
+    setDescription('');
+  };
+
+  return (
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      padding: '1rem',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      border: '1px solid #e9ecef',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '85%',
+      marginTop: '1rem'
+    }}>
+      <h3 style={{
+        margin: '0 0 0.75rem 0',
+        color: '#2c3e50',
+        fontSize: '1.15rem',
+        fontWeight: 600
+      }}>
+        Create Tickets
+      </h3>
+
+      <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '0.25rem',
+            color: '#2c3e50',
+            fontSize: '0.75rem',
+            fontWeight: 500
+          }}>
+            Title
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="What is the ticket all about..."
+            style={{
+              width: 'calc(100% - 16px)',
+              padding: '6px 8px',
+              border: '1px solid #e9ecef',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontFamily: 'inherit',
+              outline: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#007bff'}
+            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+            required
+          />
+        </div>
+        <div style={{ marginBottom: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '0.25rem',
+            color: '#2c3e50',
+            fontSize: '0.75rem',
+            fontWeight: 500
+          }}>
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your ticket..."
+            style={{
+              width: 'calc(100% - 16px)',
+              flex: 1,
+              minHeight: '60px',
+              padding: '6px 8px',
+              border: '1px solid #e9ecef',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontFamily: 'inherit',
+              outline: 'none',
+              resize: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#007bff'}
+            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !title.trim() || !description.trim()}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: loading ? '#6c757d' : '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit',
+            transition: 'background-color 0.2s',
+            width: '100%'
+          }}
+          onMouseOver={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#0056b3';
+          }}
+          onMouseOut={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#007bff';
+          }}
+        >
+          {loading ? 'Creating...' : 'Create'}
+        </button>
+      </form>
+    </div>
+  );
+};

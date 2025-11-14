@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -52,10 +50,10 @@ def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
         )
     except Exception as e:
         db.rollback()
-        raise DatabaseError(str(e))
+        raise DatabaseError(str(e)) from e
 
 
-@router.get("/latest", response_model=Optional[AnalysisRunResponse])
+@router.get("/latest", response_model=AnalysisRunResponse | None)
 def get_latest_analysis(db: Session = Depends(get_db)):
     try:
         latest_run = (
@@ -96,4 +94,4 @@ def get_latest_analysis(db: Session = Depends(get_db)):
             ticket_analyses=analysis_responses,
         )
     except Exception as e:
-        raise DatabaseError(str(e))
+        raise DatabaseError(str(e)) from e

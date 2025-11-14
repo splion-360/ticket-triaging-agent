@@ -3,11 +3,16 @@ export interface Ticket {
   title: string;
   description: string;
   created_at: string;
+  status: 'incomplete' | 'complete';
+  category?: string;
+  priority?: string;
+  notes?: string;
 }
 
 export interface TicketCreate {
   title: string;
   description: string;
+  status?: 'incomplete' | 'complete';
 }
 
 export interface TicketAnalysis {
