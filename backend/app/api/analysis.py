@@ -41,10 +41,6 @@ async def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
                         id=ta.id,
                         created_at=ta.created_at,
                         analysis_run_id=ta.analysis_run_id,
-                        ticket_id=ta.ticket_id,
-                        category=ta.category,
-                        priority=ta.priority,
-                        notes=ta.notes,
                         ticket=ticket,
                     )
                 )
@@ -86,10 +82,6 @@ def get_latest_analysis(db: Session = Depends(get_db)):
                     id=ta.id,
                     created_at=ta.created_at,
                     analysis_run_id=ta.analysis_run_id,
-                    ticket_id=ta.ticket_id,
-                    category=ta.category,
-                    priority=ta.priority,
-                    notes=ta.notes,
                     ticket=ticket,
                 )
             )
