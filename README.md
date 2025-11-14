@@ -82,5 +82,5 @@ npm run dev
 ```bash
 cd ticket-triaging-agent
 cp .env.example .env # Add your API_KEYS 
-docker compose up --build
+docker compose up --build -d # In a detached mode
 ```

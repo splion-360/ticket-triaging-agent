@@ -16,5 +16,5 @@ class BaseModel(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     created_at: Mapped[dt.datetime] = mapped_column(
-        DateTime, default=dt.datetime.now(dt.UTC)
+        DateTime, default=lambda: dt.datetime.now(dt.UTC)
     )

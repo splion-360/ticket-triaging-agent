@@ -6,11 +6,13 @@ import { TicketDetailsModal } from './TicketDetailsModal';
 interface LatestAnalysisPaneProps {
   analysis: AnalysisRun | null;
   loading: boolean;
+  onRefresh: () => void;
 }
 
 export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
   analysis,
-  loading
+  loading,
+  onRefresh
 }) => {
   const [showModal, setShowModal] = useState(false);
 
@@ -26,14 +28,47 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
         flexDirection: 'column',
         height: '85%'
       }}>
-        <h2 style={{
-          margin: '0 0 1rem 0',
-          color: '#2c3e50',
-          fontSize: '1.125rem',
-          fontWeight: 600
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem'
         }}>
-          Latest Analysis
-        </h2>
+          <h2 style={{
+            margin: 0,
+            color: '#2c3e50',
+            fontSize: '1.125rem',
+            fontWeight: 600
+          }}>
+            Latest Analysis
+          </h2>
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            style={{
+              padding: '6px 8px',
+              backgroundColor: loading ? '#6c757d' : '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              transition: 'background-color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseOver={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#218838';
+            }}
+            onMouseOut={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#28a745';
+            }}
+          >
+            <span style={{ fontSize: '0.8rem' }}>Refresh</span>
+          </button>
+        </div>
 
         {loading ? (
           <div style={{
@@ -107,48 +142,48 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
                 }}>
                   <ReactMarkdown
                     components={{
-                    p: ({ children }) => (
-                      <p style={{ margin: '0 0 6px 0', fontSize: '0.8rem', color: '#495057', lineHeight: 1.3 }}>
-                        {children}
-                      </p>
-                    ),
-                    h1: ({ children }) => (
-                      <h1 style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: '#2c3e50', fontWeight: 600 }}>
-                        {children}
-                      </h1>
-                    ),
-                    h2: ({ children }) => (
-                      <h2 style={{ margin: '0 0 6px 0', fontSize: '0.8rem', color: '#2c3e50', fontWeight: 600 }}>
-                        {children}
-                      </h2>
-                    ),
-                    ul: ({ children }) => (
-                      <ul style={{ margin: '0 0 6px 12px', fontSize: '0.75rem', color: '#495057' }}>
-                        {children}
-                      </ul>
-                    ),
-                    li: ({ children }) => (
-                      <li style={{ margin: '0 0 2px 0', fontSize: '0.75rem', color: '#495057' }}>
-                        {children}
-                      </li>
-                    ),
-                    strong: ({ children }) => (
-                      <strong style={{ fontWeight: 600, color: '#2c3e50' }}>
-                        {children}
-                      </strong>
-                    ),
-                    code: ({ children }) => (
-                      <code style={{
-                        backgroundColor: '#f8f9fa',
-                        padding: '1px 3px',
-                        borderRadius: '3px',
-                        fontSize: '0.7rem',
-                        fontFamily: 'monospace'
-                      }}>
-                        {children}
-                      </code>
-                    )
-                  }}
+                      p: ({ children }) => (
+                        <p style={{ margin: '0 0 6px 0', fontSize: '0.8rem', color: '#495057', lineHeight: 1.3 }}>
+                          {children}
+                        </p>
+                      ),
+                      h1: ({ children }) => (
+                        <h1 style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: '#2c3e50', fontWeight: 600 }}>
+                          {children}
+                        </h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 style={{ margin: '0 0 6px 0', fontSize: '0.8rem', color: '#2c3e50', fontWeight: 600 }}>
+                          {children}
+                        </h2>
+                      ),
+                      ul: ({ children }) => (
+                        <ul style={{ margin: '0 0 6px 12px', fontSize: '0.75rem', color: '#495057' }}>
+                          {children}
+                        </ul>
+                      ),
+                      li: ({ children }) => (
+                        <li style={{ margin: '0 0 2px 0', fontSize: '0.75rem', color: '#495057' }}>
+                          {children}
+                        </li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong style={{ fontWeight: 600, color: '#2c3e50' }}>
+                          {children}
+                        </strong>
+                      ),
+                      code: ({ children }) => (
+                        <code style={{
+                          backgroundColor: '#f8f9fa',
+                          padding: '1px 3px',
+                          borderRadius: '3px',
+                          fontSize: '0.7rem',
+                          fontFamily: 'monospace'
+                        }}>
+                          {children}
+                        </code>
+                      )
+                    }}
                   >
                     {analysis.summary}
                   </ReactMarkdown>

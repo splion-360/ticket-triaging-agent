@@ -124,7 +124,8 @@ const AppContent = () => {
         <div style={{ gridColumn: '2', gridRow: '2' }}>
           <LatestAnalysisPane
             analysis={analysis}
-            loading={loading.analyzing}
+            loading={loading.analyzing && !analysis}
+            onRefresh={loadLatestAnalysis}
           />
         </div>
       </div>
