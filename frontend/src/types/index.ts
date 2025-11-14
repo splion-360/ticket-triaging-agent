@@ -4,6 +4,9 @@ export interface Ticket {
   description: string;
   created_at: string;
   status: 'incomplete' | 'complete';
+  category?: string;
+  priority?: string;
+  notes?: string;
 }
 
 export interface TicketCreate {
