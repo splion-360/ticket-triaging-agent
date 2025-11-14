@@ -16,7 +16,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
-  const ticketsPerPage = 3;
+  const ticketsPerPage = 4;
 
   const paginatedTickets = useMemo(() => {
     const startIndex = (currentPage - 1) * ticketsPerPage;
@@ -47,12 +47,13 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
     <div style={{
       backgroundColor: 'white',
       borderRadius: '8px',
-      padding: '1.25rem',
+      padding: '1rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       border: '1px solid #e9ecef',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%'
+      height: '85%',
+      marginTop: '1rem'
     }}>
       <div style={{
         display: 'flex',
@@ -160,8 +161,8 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
                         color: '#6c757d',
                         lineHeight: 1.3
                       }}>
-                        {isExpanded 
-                          ? ticket.description 
+                        {isExpanded
+                          ? ticket.description
                           : truncateText(ticket.description, 60)
                         }
                       </p>

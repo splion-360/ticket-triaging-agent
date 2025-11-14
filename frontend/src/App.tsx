@@ -75,28 +75,26 @@ function App() {
   return (
     <div style={{
       minHeight: '100vh',
-      padding: '2rem',
+      padding: '1rem',
       fontFamily: '"IBM Plex Mono", monospace',
       backgroundColor: '#f8f9fa'
     }}>
       <header style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-        <h1 style={{ color: '#2c3e50', marginBottom: '0.25rem', fontSize: '1.5rem' }}>
-          Ticket Triaging Agent
+        <h1 style={{ color: '#2c3e50', marginBottom: '0.1rem', fontSize: '2rem', marginTop: '0.3rem' }}>
+          Support Ticket Analyst
         </h1>
-        <p style={{ color: '#7f8c8d', fontSize: '0.875rem' }}>
-          An agent capable of categorizing & analyzing incoming support tickets
-        </p>
       </header>
 
       {error && (
         <div style={{
-          padding: '1rem',
+          padding: '0.75rem',
           backgroundColor: '#f8d7da',
           color: '#721c24',
-          borderRadius: '8px',
+          borderRadius: '6px',
           marginBottom: '1rem',
           border: '1px solid #f5c6cb',
-          textAlign: 'center'
+          textAlign: 'center',
+          fontSize: '0.875rem'
         }}>
           {error}
         </div>
@@ -104,34 +102,42 @@ function App() {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1.5fr 1fr',
-        gridTemplateRows: '1fr 0.6fr',
+        gridTemplateColumns: '50% 50%',
+        gridTemplateRows: '50% 50%',
         gap: '1rem',
-        height: 'calc(100vh - 160px)',
-        maxWidth: '1200px',
+        height: 'calc(100vh - 120px)',
+        maxWidth: '1450px',
         margin: '0 auto'
       }}>
-        <TicketCreationPane
-          onSubmit={handleCreateTickets}
-          loading={loading.creating}
-        />
+        <div style={{ gridColumn: '1', gridRow: '1' }}>
+          <TicketCreationPane
+            onSubmit={handleCreateTickets}
+            loading={loading.creating}
+          />
+        </div>
 
-        <PendingTicketsPane
-          tickets={pendingTickets}
-          loading={loading.tickets}
-          onAnalyze={handleAnalyze}
-          analyzing={loading.analyzing}
-        />
+        <div style={{ gridColumn: '2', gridRow: '1' }}>
+          <PendingTicketsPane
+            tickets={pendingTickets}
+            loading={loading.tickets}
+            onAnalyze={handleAnalyze}
+            analyzing={loading.analyzing}
+          />
+        </div>
 
-        <AnalyzedTicketsPane
-          tickets={analyzedTickets}
-          loading={loading.tickets}
-        />
+        <div style={{ gridColumn: '1', gridRow: '2' }}>
+          <AnalyzedTicketsPane
+            tickets={analyzedTickets}
+            loading={loading.tickets}
+          />
+        </div>
 
-        <LatestAnalysisPane
-          analysis={analysis}
-          loading={loading.analyzing}
-        />
+        <div style={{ gridColumn: '2', gridRow: '2' }}>
+          <LatestAnalysisPane
+            analysis={analysis}
+            loading={loading.analyzing}
+          />
+        </div>
       </div>
     </div>
   );

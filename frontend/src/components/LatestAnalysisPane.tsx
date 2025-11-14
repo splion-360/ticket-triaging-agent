@@ -18,12 +18,12 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
       <div style={{
         backgroundColor: 'white',
         borderRadius: '8px',
-        padding: '1.5rem',
+        padding: '1rem',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         border: '1px solid #e9ecef',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%'
+        height: '85%'
       }}>
         <h2 style={{
           margin: '0 0 1rem 0',
@@ -69,7 +69,7 @@ export const LatestAnalysisPane: React.FC<LatestAnalysisPaneProps> = ({
               backgroundColor: '#f8f9fa',
               borderRadius: '8px',
               border: '1px solid #e9ecef',
-              marginBottom: '1rem',
+              marginBottom: '0.75rem',
               flex: 1
             }}>
               <div style={{

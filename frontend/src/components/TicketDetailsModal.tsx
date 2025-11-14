@@ -96,14 +96,14 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
               fontSize: '1.25rem',
               fontWeight: 600
             }}>
-              Analysis Run #{analysis.id} Details
+              Details of analysis run #{analysis.id}
             </h2>
             <p style={{
               margin: 0,
               color: '#6c757d',
               fontSize: '0.875rem'
             }}>
-              {analysis.ticket_analyses.length} tickets analyzed on {new Date(analysis.created_at).toLocaleDateString()}
+              {analysis.ticket_analyses.length} tickets processed on {new Date(analysis.created_at).toLocaleDateString()}
             </p>
           </div>
           <button
@@ -146,11 +146,11 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
             {analysis.ticket_analyses.map((ticketAnalysis) => {
               const ticket = ticketAnalysis.ticket;
               if (!ticket) return null;
-              
+
               const isExpanded = expandedTickets.has(ticket.id);
               const priorityStyle = getPriorityColor(ticketAnalysis.priority || 'unknown');
               const categoryStyle = getCategoryColor(ticketAnalysis.category || 'uncategorized');
-              
+
               return (
                 <div
                   key={ticket.id}
@@ -182,12 +182,12 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                         color: '#6c757d',
                         lineHeight: 1.4
                       }}>
-                        {isExpanded 
-                          ? ticket.description 
+                        {isExpanded
+                          ? ticket.description
                           : truncateText(ticket.description, 120)
                         }
                       </p>
-                      
+
                       {ticketAnalysis.notes && isExpanded && (
                         <div style={{
                           padding: '12px',
@@ -195,7 +195,7 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                           borderRadius: '6px',
                           marginBottom: '12px'
                         }}>
-                          <strong style={{ fontSize: '0.875rem', color: '#495057' }}>Analysis Notes:</strong>
+                          <strong style={{ fontSize: '0.875rem', color: '#495057' }}>Agent Notes:</strong>
                           <p style={{
                             margin: '6px 0 0 0',
                             fontSize: '0.875rem',
@@ -206,7 +206,7 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
                           </p>
                         </div>
                       )}
-                      
+
                       <div style={{
                         display: 'flex',
                         gap: '8px',

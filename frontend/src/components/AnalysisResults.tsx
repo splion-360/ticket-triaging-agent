@@ -36,10 +36,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       'billing': '#007bff',
-      'bug': '#dc3545', 
+      'bug': '#dc3545',
       'feature_request': '#28a745',
       'authentication': '#fd7e14',
-      'general': '#6c757d'
+      'other': '#6c757d'
     };
     return colors[category] || '#6c757d';
   };
@@ -47,10 +47,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
   return (
     <div style={{ marginTop: '2rem' }}>
       <h2>📊 Analysis Results</h2>
-      
-      <div style={{ 
-        padding: '1rem', 
-        backgroundColor: '#e7f3ff', 
+
+      <div style={{
+        padding: '1rem',
+        backgroundColor: '#e7f3ff',
         borderLeft: '4px solid #007bff',
         marginBottom: '2rem',
         borderRadius: '4px'
@@ -79,12 +79,12 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
                 #{ta.ticket?.id}: {ta.ticket?.title}
               </strong>
             </div>
-            
+
             <div style={{ marginBottom: '0.5rem' }}>
               <span style={{ marginRight: '1rem' }}>
                 <strong>Category:</strong>{' '}
-                <span 
-                  style={{ 
+                <span
+                  style={{
                     color: getCategoryColor(ta.category),
                     fontWeight: 'bold',
                     textTransform: 'capitalize'
@@ -95,8 +95,8 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
               </span>
               <span>
                 <strong>Priority:</strong>{' '}
-                <span 
-                  style={{ 
+                <span
+                  style={{
                     color: getPriorityColor(ta.priority),
                     fontWeight: 'bold',
                     textTransform: 'capitalize'
@@ -106,11 +106,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ analysis, load
                 </span>
               </span>
             </div>
-            
+
             {ta.notes && (
-              <div style={{ 
-                marginTop: '0.5rem', 
-                padding: '0.5rem', 
+              <div style={{
+                marginTop: '0.5rem',
+                padding: '0.5rem',
                 backgroundColor: '#f8f9fa',
                 borderRadius: '4px',
                 fontStyle: 'italic',

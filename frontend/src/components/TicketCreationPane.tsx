@@ -25,79 +25,82 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
     <div style={{
       backgroundColor: 'white',
       borderRadius: '8px',
-      padding: '1.5rem',
+      padding: '1rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       border: '1px solid #e9ecef',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%'
+      height: '85%',
+      marginTop: '1rem'
     }}>
-      <h2 style={{
-        margin: '0 0 1rem 0',
+      <h3 style={{
+        margin: '0 0 0.75rem 0',
         color: '#2c3e50',
-        fontSize: '1.125rem',
+        fontSize: '1.15rem',
         fontWeight: 600
       }}>
-        Create Ticket
-      </h2>
+        Create Tickets
+      </h3>
 
       <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '0.75rem' }}>
           <label style={{
             display: 'block',
-            marginBottom: '0.5rem',
+            marginBottom: '0.25rem',
             color: '#2c3e50',
-            fontSize: '0.875rem',
+            fontSize: '0.75rem',
             fontWeight: 500
           }}>
-            Title *
+            Title
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter ticket title..."
+            placeholder="What is the ticket all about..."
             style={{
-              width: '100%',
-              padding: '10px',
-              border: '2px solid #e9ecef',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
+              width: 'calc(100% - 16px)',
+              padding: '6px 8px',
+              border: '1px solid #e9ecef',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
               fontFamily: 'inherit',
               outline: 'none',
-              transition: 'border-color 0.2s'
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box'
             }}
             onFocus={(e) => e.target.style.borderColor = '#007bff'}
             onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
             required
           />
         </div>
-        <div style={{ marginBottom: '1rem', flex: 1 }}>
+        <div style={{ marginBottom: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
           <label style={{
             display: 'block',
-            marginBottom: '0.5rem',
+            marginBottom: '0.25rem',
             color: '#2c3e50',
-            fontSize: '0.875rem',
+            fontSize: '0.75rem',
             fontWeight: 500
           }}>
-            Description *
+            Description
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter ticket description..."
+            placeholder="Describe your ticket..."
             style={{
-              width: '100%',
-              height: '100%',
-              minHeight: '80px',
-              padding: '10px',
-              border: '2px solid #e9ecef',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
+              width: 'calc(100% - 16px)',
+              flex: 1,
+              minHeight: '60px',
+              padding: '6px 8px',
+              border: '1px solid #e9ecef',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
               fontFamily: 'inherit',
               outline: 'none',
               resize: 'none',
-              transition: 'border-color 0.2s'
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box'
             }}
             onFocus={(e) => e.target.style.borderColor = '#007bff'}
             onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
@@ -109,17 +112,17 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
           type="submit"
           disabled={loading || !title.trim() || !description.trim()}
           style={{
-            padding: '10px 20px',
+            padding: '6px 12px',
             backgroundColor: loading ? '#6c757d' : '#007bff',
             color: 'white',
             border: 'none',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
             fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer',
             fontFamily: 'inherit',
             transition: 'background-color 0.2s',
-            alignSelf: 'flex-start'
+            width: '100%'
           }}
           onMouseOver={(e) => {
             if (!loading) e.currentTarget.style.backgroundColor = '#0056b3';
@@ -128,7 +131,7 @@ export const TicketCreationPane: React.FC<TicketCreationPaneProps> = ({
             if (!loading) e.currentTarget.style.backgroundColor = '#007bff';
           }}
         >
-          {loading ? 'Creating...' : 'Create Ticket'}
+          {loading ? 'Creating...' : 'Create'}
         </button>
       </form>
     </div>

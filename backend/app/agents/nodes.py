@@ -14,16 +14,21 @@ class AnalysisState(TypedDict):
     individual_results: list[dict[str, Any]]
     batch_summary: str
 
+
 def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
     try:
         db = get_db_session()
 
-        analysis_run = db.query(AnalysisRun).filter(
-            AnalysisRun.id == state["analysis_run_id"]
-        ).first()
+        analysis_run = (
+            db.query(AnalysisRun)
+            .filter(AnalysisRun.id == state["analysis_run_id"])
+            .first()
+        )
 
         if not analysis_run:
-            raise AnalysisError(f"Analysis run {state['analysis_run_id']} not found")
+            raise AnalysisError(
+                f"Analysis run {state['analysis_run_id']} not found"
+            )
 
         tickets = db.query(Ticket).all()
 
@@ -34,6 +39,7 @@ def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
     except Exception as e:
         raise AnalysisError(f"Failed to fetch tickets: {str(e)}")
 
+
 def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
@@ -43,9 +49,13 @@ def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
             try:
                 individual_results = llm_batch_analyze(tickets)
             except Exception:
-                individual_results = [categorize_ticket(ticket) for ticket in tickets]
+                individual_results = [
+                    categorize_ticket(ticket) for ticket in tickets
+                ]
         else:
-            individual_results = [categorize_ticket(ticket) for ticket in tickets]
+            individual_results = [
+                categorize_ticket(ticket) for ticket in tickets
+            ]
 
         batch_summary = generate_batch_summary(tickets, individual_results)
 
@@ -56,13 +66,16 @@ def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
     except Exception as e:
         raise AnalysisError(f"Failed to analyze tickets: {str(e)}")
 
+
 def save_results_node(state: AnalysisState) -> AnalysisState:
     try:
         db = get_db_session()
 
-        analysis_run = db.query(AnalysisRun).filter(
-            AnalysisRun.id == state["analysis_run_id"]
-        ).first()
+        analysis_run = (
+            db.query(AnalysisRun)
+            .filter(AnalysisRun.id == state["analysis_run_id"])
+            .first()
+        )
 
         analysis_run.summary = state["batch_summary"]
 
@@ -74,7 +87,7 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
                 ticket_id=ticket.id,
                 category=result["category"],
                 priority=result["priority"],
-                notes=result.get("notes")
+                notes=result.get("notes"),
             )
             db.add(ticket_analysis)
 
@@ -85,6 +98,7 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
     except Exception as e:
         raise AnalysisError(f"Failed to save results: {str(e)}")
 
+
 def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
     try:
         from langchain_openai import ChatOpenAI
@@ -92,19 +106,21 @@ def llm_batch_analyze(tickets: list[Ticket]) -> list[dict[str, Any]]:
         llm = ChatOpenAI(
             model="gpt-3.5-turbo",
             api_key=settings.openai_api_key,
-            temperature=0
+            temperature=0,
         )
 
-        tickets_text = "\n".join([
-            f"Ticket {i+1}: Title: {ticket.title} | Description: {ticket.description}"
-            for i, ticket in enumerate(tickets)
-        ])
+        tickets_text = "\n".join(
+            [
+                f"Ticket {i+1}: Title: {ticket.title} | Description: {ticket.description}"
+                for i, ticket in enumerate(tickets)
+            ]
+        )
 
         prompt = f"""Analyze these support tickets and provide categorization:
 
 {tickets_text}
 
-For each ticket, provide category (billing/bug/feature_request/authentication/general), 
+For each ticket, provide category (billing/bug/feature_request/authentication/other), 
 priority (high/medium/low), and brief notes.
 
 Respond with valid JSON array:

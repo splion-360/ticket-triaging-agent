@@ -80,12 +80,13 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
     <div style={{
       backgroundColor: 'white',
       borderRadius: '8px',
-      padding: '1.25rem',
+      padding: '1rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       border: '1px solid #e9ecef',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%'
+      height: '85%',
+      marginTop: '0.1rem'
     }}>
       <h2 style={{
         margin: '0 0 1rem 0',
@@ -182,7 +183,7 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
               const isExpanded = expandedTickets.has(ticket.id);
               const priorityStyle = getPriorityColor(ticket.priority || 'unknown');
               const categoryStyle = getCategoryColor(ticket.category || 'uncategorized');
-              
+
               return (
                 <div
                   key={ticket.id}
@@ -215,8 +216,8 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                         color: '#6c757d',
                         lineHeight: 1.3
                       }}>
-                        {isExpanded 
-                          ? ticket.description 
+                        {isExpanded
+                          ? ticket.description
                           : truncateText(ticket.description, 50)
                         }
                       </p>
