@@ -11,11 +11,14 @@ from app.models import AnalysisRun, Ticket, TicketAnalysis
 class AnalysisState(TypedDict):
     analysis_run_id: int
     tickets: list[Ticket]
-    individual_results: list[dict[str, Any]]
-    batch_summary: str
+    results: list[dict[str, Any]]
+    summary: str
 
 
-def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
+def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
+    """
+    LangGraph node that fetches tickets from the database
+    """
     try:
         db = get_db_session()
 
@@ -43,24 +46,20 @@ def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
 def analyze_tickets_node(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
-        individual_results = []
+        results = []
 
         if settings.openai_api_key:
             try:
-                individual_results = llm_batch_analyze(tickets)
+                results = llm_batch_analyze(tickets)
             except Exception:
-                individual_results = [
-                    categorize_ticket(ticket) for ticket in tickets
-                ]
+                results = [categorize_ticket(ticket) for ticket in tickets]
         else:
-            individual_results = [
-                categorize_ticket(ticket) for ticket in tickets
-            ]
+            results = [categorize_ticket(ticket) for ticket in tickets]
 
-        batch_summary = generate_batch_summary(tickets, individual_results)
+        summary = generate_batch_summary(tickets, results)
 
-        state["individual_results"] = individual_results
-        state["batch_summary"] = batch_summary
+        state["results"] = results
+        state["summary"] = summary
         return state
 
     except Exception as e:
@@ -76,10 +75,10 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
             .first()
         )
 
-        analysis_run.summary = state["batch_summary"]
+        analysis_run.summary = state["summary"]
 
         for i, ticket in enumerate(state["tickets"]):
-            result = state["individual_results"][i]
+            result = state["results"][i]
 
             merged_ticket = db.merge(
                 ticket

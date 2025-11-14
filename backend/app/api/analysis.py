@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.agents import run_graph
+from app.agents.graph import run_graph
+from app.config import setup_logger
 from app.database import get_db
 from app.exceptions import AnalysisRunNotFoundError, DatabaseError
 from app.models import AnalysisRun, Ticket, TicketAnalysis
@@ -11,6 +12,8 @@ from app.schemas import (
     TicketAnalysisResponse,
 )
 
+
+logger = setup_logger(__name__)
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
