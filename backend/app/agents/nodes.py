@@ -1,8 +1,12 @@
+import asyncio
 import json
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
+
+from langgraph.graph import add
 
 from app.agents.fallback import categorize_ticket, generate_batch_summary
 from app.config import (
+    MAX_CONCURRENT_REQUESTS,
     MAX_TOKENS,
     MODEL,
     SUMMARY_TOKENS,
@@ -21,8 +25,8 @@ logger = setup_logger(__name__)
 class AnalysisState(TypedDict):
     analysis_run_id: int
     tickets: list[Ticket]
-    results: list[dict[str, Any]]
-    summary: str
+    results: Annotated[list[dict[str, Any]], add]
+    summary: Annotated[str, add]
 
 
 def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
@@ -56,7 +60,6 @@ def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
 async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
-        results = []
 
         try:
             results = await get_analysis(tickets)
@@ -66,8 +69,7 @@ async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
             )
             results = [categorize_ticket(ticket) for ticket in tickets]
 
-        state["results"] = results
-        return state
+        return {"results": results}
 
     except Exception as e:
         raise AnalysisError(f"Failed to classify tickets: {str(e)}") from e
@@ -85,8 +87,7 @@ async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
             )
             summary = generate_batch_summary(tickets, [])
 
-        state["summary"] = summary
-        return state
+        return {"summary": summary}
 
     except Exception as e:
         raise AnalysisError(f"Failed to summarize tickets: {str(e)}") from e
@@ -131,39 +132,58 @@ def node_save_results(state: AnalysisState) -> AnalysisState:
 
 
 async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
-    try:
-        client = get_async_openai_client()
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
-        tickets_text = "\n".join(
-            [
-                f"Ticket {i+1}: Title: {ticket.title} | Description: {ticket.description}"
-                for i, ticket in enumerate(tickets)
-            ]
-        )
+    async def analyze_single_ticket(ticket: Ticket) -> dict[str, Any]:
+        async with semaphore:
+            try:
+                client = get_async_openai_client()
 
-        prompt = f"""
-        Analyze these support tickets and provide categorization:
+                prompt = f"""
+                Analyze this support ticket and provide categorization:
 
-        {tickets_text}
+                Ticket: Title: {ticket.title} | Description: {ticket.description}
 
-        For each ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
+                For this ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
 
-        Respond with valid JSON array:
-        [{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]"""
+                Respond with valid JSON object:
+                {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
+                """
 
-        response = await client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-        )
+                response = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=TEMPERATURE,
+                    max_tokens=MAX_TOKENS,
+                )
 
-        data = response.choices[0].message.content
-        logger.info(f"Preview of response from classify agent: {data[:50]}")
-        return json.loads(data)
+                data = response.choices[0].message.content
+                logger.info(
+                    f"Analyzed ticket {ticket.id[:8]}... - Category: {json.loads(data).get('category', 'unknown')}"
+                )
+                return json.loads(data)
 
-    except Exception as e:
-        raise e
+            except Exception as e:
+                logger.warning(
+                    f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
+                )
+                return categorize_ticket(ticket)
+
+    tasks = [analyze_single_ticket(ticket) for ticket in tickets]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    final_results = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            logger.warning(f"Task {i} failed: {result}, using fallback")
+            final_results.append(categorize_ticket(tickets[i]))
+        else:
+            final_results.append(result)
+
+    logger.info(
+        f"Completed multithreaded analysis of {len(tickets)} tickets with max {MAX_CONCURRENT_REQUESTS} concurrent requests"
+    )
+    return final_results
 
 
 async def get_summary(tickets: list[Ticket]) -> str:
