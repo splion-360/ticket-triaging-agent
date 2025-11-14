@@ -103,8 +103,8 @@ class TicketAnalysis(BaseModel):
 # Reusable state and node patterns
 class AnalysisState(TypedDict):
     tickets: List[Ticket]
-    individual_results: List[Dict]
-    batch_summary: str
+    results: List[Dict]
+    summary: str
     analysis_run_id: int
 
 def create_analysis_graph():
