@@ -1,5 +1,15 @@
+import json
+import re
 from typing import Any
 
+from pydantic import BaseModel
+
+from app.config import (
+    MAX_TOKENS,
+    MODEL,
+    TEMPERATURE,
+    get_async_openai_client,
+)
 from app.models import Ticket
 
 
@@ -104,3 +114,80 @@ def default_summarizer(
         )
 
     return " ".join(summary_parts)
+
+
+async def get_structured_llm_response(
+    prompt: str,
+    response_format: BaseModel = None,
+    model: str = MODEL,
+    temperature: float = TEMPERATURE,
+    max_tokens: int = MAX_TOKENS,
+    is_markdown: bool = False,
+) -> Any:
+    """
+    Makes an async request to the provider and parses the response in the provided structured format
+
+    """
+
+    client = get_async_openai_client()
+
+    try:
+
+        if response_format and isinstance(response_format, BaseModel):
+            response = await client.chat.completions.parse(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format=response_format,
+            )
+
+            if response.choices[0].message.refusal:
+                raise Exception("Refusal for structured output parsing")
+
+            parsed = response.choices[0].message.parsed
+            return parsed.model_dump()
+
+        else:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+            data = response.choices[0].message.content
+            if not data or not data.strip():
+                raise Exception("Empty response from LLM")
+
+            if is_markdown:
+                return extract_markdown(data)
+
+            else:
+                return extract_json(data)
+
+    except Exception as e:
+        raise e
+
+
+def extract_markdown(content: str) -> str | None:
+    """
+    Extracts MD embedded content from the LLM response
+    Raises ValueError if no appropriate TAGS are found
+    """
+    match = re.search(r"```md\s*(.*?)\s*```", content, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    raise ValueError("No MD tags found")
+
+
+def extract_json(content: str) -> str | None:
+    """
+    Extract JSON embedded content from the LLM response
+    Returns None if no appropriate TAGS are found
+
+    """
+    match = re.search(r"```(?:json)?\s*(.*?)\s*```", content, re.DOTALL)
+    if match:
+        return json.loads(match.group(1))
+    raise ValueError("No JSON tags found")

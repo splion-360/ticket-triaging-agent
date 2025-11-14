@@ -1,18 +1,15 @@
 import asyncio
-import json
-import re
 from typing import Any, TypedDict
 
 from pydantic import BaseModel
 
-from app.agents.defaults import default_categorizer, default_summarizer
+from app.agents.utils import (
+    default_categorizer,
+    default_summarizer,
+    get_structured_llm_response,
+)
 from app.config import (
     MAX_CONCURRENT_REQUESTS,
-    MAX_TOKENS,
-    MODEL,
-    SUMMARY_TOKENS,
-    TEMPERATURE,
-    get_async_openai_client,
     setup_logger,
 )
 from app.database import get_db_session
@@ -165,7 +162,6 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
 
         async with semaphore:
 
-            client = get_async_openai_client()
             prompt = f"""
             Analyze this support ticket and provide categorization:
 
@@ -176,23 +172,12 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
             """
 
             try:
-                response = await client.chat.completions.parse(
-                    model=MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=TEMPERATURE,
-                    max_tokens=MAX_TOKENS,
+
+                result = await get_structured_llm_response(
+                    prompt=prompt,
                     response_format=TicketStructuredOutput,
                 )
 
-                if response.choices[0].message.refusal:
-                    raise Exception("Refusal for structured output parsing")
-
-                parsed = response.choices[0].message.parsed
-                result = {
-                    "category": parsed.category,
-                    "priority": parsed.priority,
-                    "notes": parsed.notes,
-                }
                 logger.info(
                     f"Analyzed ticket {ticket.id} - Category: {result['category']}",
                     "MAGENTA",
@@ -201,33 +186,9 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
 
             except Exception as e:
                 logger.warning(
-                    f"Structured Output passign failed. Falling back to manual parser: {e}"
+                    f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
                 )
-                response = await client.chat.completions.create(
-                    model=MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=TEMPERATURE,
-                    max_tokens=MAX_TOKENS,
-                )
-
-                data = response.choices[0].message.content
-                try:
-                    match = re.search(
-                        r"```(?:json)?\s*(.*?)\s*```", data, re.DOTALL
-                    )
-                    json_content = match.group(1) if match else data.strip()
-                    parsed_data = json.loads(json_content)
-                    logger.info(
-                        f"Analyzed ticket {ticket.id} - Category: {parsed_data.get('category', 'unknown')}",
-                        "BRIGHT_YELLOW",
-                    )
-                    return parsed_data
-
-                except Exception as e:
-                    logger.warning(
-                        f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
-                    )
-                    return default_categorizer(ticket)
+                return default_categorizer(ticket)
 
     tasks = [analyze_single_ticket(ticket) for ticket in tickets]
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -238,7 +199,6 @@ async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
 
 async def get_summary(tickets: list[Ticket]) -> str:
     try:
-        client = get_async_openai_client()
 
         tickets_text = "\n".join(
             [
@@ -248,21 +208,30 @@ async def get_summary(tickets: list[Ticket]) -> str:
         )
 
         prompt = f"""
+        Analyze the following support tickets and provide a concise summary in markdown format.
 
-        You are a SUMMARIZING AGENT. Your task is to summarize these support tickets in 100 words or less:
         TICKETS:
         {tickets_text}
 
-        Provide a brief overview of the main issues without MISSING ANY details.
+        INSTRUCTIONS:
+        - IDENTIFY common patterns and trends across tickets
+        - Highlight the most critical issues by priority and frequency
+        - Keep the summary UNDER 200 words
+        - Format your response as clean markdown within code blocks:
+
+        ```md
+        ## Ticket Analysis Summary
+
+        **Key Issues:**
+        - [Description of the key issues in BULLETS with supporting FIGURES]
+        - [Describe the MOST COMMON ISSUES in detail]
+        ```
         """
 
-        response = await client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=SUMMARY_TOKENS,
+        data = await get_structured_llm_response(
+            prompt=prompt,
+            is_markdown=True,
         )
-        data = response.choices[0].message.content.strip()
         logger.info(f"Preview of response from summary agent: {data[:500]}")
         return data
 
