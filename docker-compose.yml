@@ -19,7 +19,6 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/triage
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ENVIRONMENT: development
     ports:
       - "8000:8000"
@@ -29,6 +28,8 @@ services:
     volumes:
       - ./backend:/app
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build: ./frontend

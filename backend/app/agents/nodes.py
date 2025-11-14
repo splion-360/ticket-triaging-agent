@@ -1,8 +1,13 @@
+import asyncio
 import json
+import re
 from typing import Any, TypedDict
+
+from pydantic import BaseModel
 
 from app.agents.fallback import categorize_ticket, generate_batch_summary
 from app.config import (
+    MAX_CONCURRENT_REQUESTS,
     MAX_TOKENS,
     MODEL,
     SUMMARY_TOKENS,
@@ -16,6 +21,12 @@ from app.models import AnalysisRun, Ticket, TicketAnalysis
 
 
 logger = setup_logger(__name__)
+
+
+class TicketStructuredOutput(BaseModel):
+    category: str
+    priority: str
+    notes: str
 
 
 class AnalysisState(TypedDict):
@@ -56,13 +67,12 @@ def node_fetch_tickets(state: AnalysisState) -> AnalysisState:
 async def node_classify_tickets(state: AnalysisState) -> AnalysisState:
     try:
         tickets = state["tickets"]
-        results = []
 
         try:
             results = await get_analysis(tickets)
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Trouble with the provided client. Falling back to non-LLM generated response"
+                f"Trouble with the provided client. Falling back to non-LLM generated response: {e}"
             )
             results = [categorize_ticket(ticket) for ticket in tickets]
 
@@ -79,11 +89,11 @@ async def node_summarize_tickets(state: AnalysisState) -> AnalysisState:
 
         try:
             summary = await get_summary(tickets)
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Trouble with the provided client. Falling back to non-LLM generated summary"
+                f"Trouble with the provided client. Falling back to non-LLM generated summary: {e}"
             )
-            summary = generate_batch_summary(tickets, [])
+            summary = generate_batch_summary(tickets, state.get("results", []))
 
         state["summary"] = summary
         return state
@@ -131,39 +141,87 @@ def node_save_results(state: AnalysisState) -> AnalysisState:
 
 
 async def get_analysis(tickets: list[Ticket]) -> list[dict[str, Any]]:
-    try:
-        client = get_async_openai_client()
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
-        tickets_text = "\n".join(
-            [
-                f"Ticket {i+1}: Title: {ticket.title} | Description: {ticket.description}"
-                for i, ticket in enumerate(tickets)
-            ]
-        )
+    async def analyze_single_ticket(ticket: Ticket) -> dict[str, Any]:
+        async with semaphore:
+            try:
+                client = get_async_openai_client()
+                prompt = f"""
+                Analyze this support ticket and provide categorization:
 
-        prompt = f"""
-        Analyze these support tickets and provide categorization:
+                Ticket: Title: {ticket.title} | Description: {ticket.description}
 
-        {tickets_text}
+                For this ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
+                Respond with valid JSON object: {{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}
+                """
 
-        For each ticket, provide category (billing/bug/feature_request/authentication/other), priority (high/medium/low), and brief notes.
+                try:
+                    response = await client.chat.completions.parse(
+                        model=MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=TEMPERATURE,
+                        max_tokens=MAX_TOKENS,
+                        response_format=TicketStructuredOutput,
+                    )
 
-        Respond with valid JSON array:
-        [{{"category": "billing", "priority": "high", "notes": "Payment processing issue"}}]"""
+                    if response.choices[0].message.refusal:
+                        raise Exception("Refusal for structured output parsing")
 
-        response = await client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-        )
+                    parsed = response.choices[0].message.parsed
+                    result = {
+                        "category": parsed.category,
+                        "priority": parsed.priority,
+                        "notes": parsed.notes,
+                    }
+                    logger.info(
+                        f"Analyzed ticket {ticket.id[:8]}... - Category: {result['category']}"
+                    )
+                    return result
 
-        data = response.choices[0].message.content
-        logger.info(f"Preview of response from classify agent: {data[:50]}")
-        return json.loads(data)
+                except Exception as e:
+                    logger.warning(
+                        f"Structured Output passign failed. Falling back to manual parser: {e}"
+                    )
+                    response = await client.chat.completions.create(
+                        model=MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=TEMPERATURE,
+                        max_tokens=MAX_TOKENS,
+                    )
 
-    except Exception as e:
-        raise e
+                    data = response.choices[0].message.content
+                    if not data or not data.strip():
+                        return categorize_ticket(ticket)
+
+                    json_match = re.search(
+                        r"```(?:json)?\s*(.*?)\s*```", data, re.DOTALL
+                    )
+                    json_content = (
+                        json_match.group(1) if json_match else data.strip()
+                    )
+
+                    try:
+                        parsed_data = json.loads(json_content)
+                        logger.info(
+                            f"Analyzed ticket {ticket.id[:8]}... - Category: {parsed_data.get('category', 'unknown')}"
+                        )
+                        return parsed_data
+
+                    except json.JSONDecodeError as e:
+                        raise e
+
+            except Exception as e:
+                logger.warning(
+                    f"LLM analysis failed for ticket {ticket.id[:8]}..., using fallback: {str(e)}"
+                )
+                return categorize_ticket(ticket)
+
+    tasks = [analyze_single_ticket(ticket) for ticket in tickets]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    logger.info(f"Completed processing {len(tickets)} tickets")
+    return results
 
 
 async def get_summary(tickets: list[Ticket]) -> str:

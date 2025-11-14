@@ -59,6 +59,13 @@ def generate_batch_summary(
     tickets: list[Ticket], analyses: list[dict[str, Any]]
 ) -> str:
     total = len(tickets)
+
+    if total == 0:
+        return "No tickets to analyze."
+
+    if len(analyses) == 0:
+        return f"Found {total} tickets ready for analysis."
+
     categories = {}
     priorities = {}
 
@@ -68,6 +75,9 @@ def generate_batch_summary(
         categories[cat] = categories.get(cat, 0) + 1
         priorities[pri] = priorities.get(pri, 0) + 1
 
+    if not categories or not priorities:
+        return f"Analyzed {total} tickets with incomplete categorization."
+
     cat_summary = ", ".join(
         [f"{count} {cat}" for cat, count in categories.items()]
     )
@@ -75,4 +85,5 @@ def generate_batch_summary(
         [f"{count} {pri}" for pri, count in priorities.items()]
     )
 
-    return f"Analyzed {total} tickets. Categories: {cat_summary}. Priorities: {pri_summary}. Most common category: {max(categories, key=categories.get)} ({categories[max(categories, key=categories.get)]} tickets)."
+    most_common_cat = max(categories, key=categories.get)
+    return f"Analyzed {total} tickets. Categories: {cat_summary}. Priorities: {pri_summary}. Most common category: {most_common_cat} ({categories[most_common_cat]} tickets)."
