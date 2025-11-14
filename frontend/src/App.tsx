@@ -79,11 +79,11 @@ function App() {
       fontFamily: '"IBM Plex Mono", monospace',
       backgroundColor: '#f8f9fa'
     }}>
-      <header style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <h1 style={{ color: '#2c3e50', marginBottom: '0.5rem', fontSize: '2rem' }}>
+      <header style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+        <h1 style={{ color: '#2c3e50', marginBottom: '0.25rem', fontSize: '1.5rem' }}>
           Ticket Triaging Agent
         </h1>
-        <p style={{ color: '#7f8c8d', fontSize: '1rem' }}>
+        <p style={{ color: '#7f8c8d', fontSize: '0.875rem' }}>
           An agent capable of categorizing & analyzing incoming support tickets
         </p>
       </header>
@@ -104,11 +104,11 @@ function App() {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '2fr 1fr',
-        gridTemplateRows: '1fr 1fr',
-        gap: '1.5rem',
-        height: 'calc(100vh - 200px)',
-        maxWidth: '1400px',
+        gridTemplateColumns: '1.5fr 1fr',
+        gridTemplateRows: '1fr 0.6fr',
+        gap: '1rem',
+        height: 'calc(100vh - 160px)',
+        maxWidth: '1200px',
         margin: '0 auto'
       }}>
         <TicketCreationPane

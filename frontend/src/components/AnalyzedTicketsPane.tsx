@@ -79,12 +79,13 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
   return (
     <div style={{
       backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      borderRadius: '8px',
+      padding: '1.25rem',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       border: '1px solid #e9ecef',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      height: '100%'
     }}>
       <h2 style={{
         margin: '0 0 1rem 0',
@@ -202,7 +203,7 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                     <div style={{ flex: 1 }}>
                       <h4 style={{
                         margin: '0 0 4px 0',
-                        fontSize: '0.875rem',
+                        fontSize: '0.8rem',
                         fontWeight: 600,
                         color: '#2c3e50'
                       }}>
@@ -210,13 +211,13 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
                       </h4>
                       <p style={{
                         margin: '0 0 8px 0',
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         color: '#6c757d',
-                        lineHeight: 1.4
+                        lineHeight: 1.3
                       }}>
                         {isExpanded 
                           ? ticket.description 
-                          : truncateText(ticket.description, 60)
+                          : truncateText(ticket.description, 50)
                         }
                       </p>
                       {ticket.notes && isExpanded && (
