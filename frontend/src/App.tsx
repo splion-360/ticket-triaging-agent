@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TicketForm } from './components/TicketForm';
-import { TicketList } from './components/TicketList';
-import { AnalysisButton } from './components/AnalysisButton';
-import { AnalysisResults } from './components/AnalysisResults';
+import { TicketCreationPane } from './components/TicketCreationPane';
+import { PendingTicketsPane } from './components/PendingTicketsPane';
+import { AnalyzedTicketsPane } from './components/AnalyzedTicketsPane';
+import { LatestAnalysisPane } from './components/LatestAnalysisPane';
 import { ticketApi, analysisApi } from './services/api';
 import { Ticket, TicketCreate, AnalysisRun } from './types';
 
@@ -56,6 +56,7 @@ function App() {
       setError(null);
       const result = await analysisApi.runAnalysis({});
       setAnalysis(result);
+      await loadTickets();
     } catch (err) {
       setError('Failed to run analysis');
     } finally {
@@ -68,19 +69,22 @@ function App() {
     loadLatestAnalysis();
   }, []);
 
+  const pendingTickets = tickets.filter(t => t.status === 'incomplete');
+  const analyzedTickets = tickets.filter(t => t.status === 'complete');
+
   return (
     <div style={{
-      maxWidth: '1200px',
-      margin: '0 auto',
+      minHeight: '100vh',
       padding: '2rem',
-      fontFamily: '"IBM Plex Mono", monospace'
+      fontFamily: '"IBM Plex Mono", monospace',
+      backgroundColor: '#f8f9fa'
     }}>
-      <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
-        <h1 style={{ color: '#2c3e50', marginBottom: '0.5rem' }}>
-          🎫 Support Ticket Analyst
+      <header style={{ marginBottom: '2rem', textAlign: 'center' }}>
+        <h1 style={{ color: '#2c3e50', marginBottom: '0.5rem', fontSize: '2rem' }}>
+          Ticket Triaging Agent
         </h1>
-        <p style={{ color: '#7f8c8d', fontSize: '1.1rem' }}>
-          AI-powered ticket categorization and priority analysis
+        <p style={{ color: '#7f8c8d', fontSize: '1rem' }}>
+          An agent capable of categorizing & analyzing incoming support tickets
         </p>
       </header>
 
@@ -89,34 +93,46 @@ function App() {
           padding: '1rem',
           backgroundColor: '#f8d7da',
           color: '#721c24',
-          borderRadius: '4px',
+          borderRadius: '8px',
           marginBottom: '1rem',
-          border: '1px solid #f5c6cb'
+          border: '1px solid #f5c6cb',
+          textAlign: 'center'
         }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
-      <TicketForm
-        onSubmit={handleCreateTickets}
-        loading={loading.creating}
-      />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '2fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        gap: '1.5rem',
+        height: 'calc(100vh - 200px)',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
+        <TicketCreationPane
+          onSubmit={handleCreateTickets}
+          loading={loading.creating}
+        />
 
-      <TicketList
-        tickets={tickets}
-        loading={loading.tickets}
-      />
+        <PendingTicketsPane
+          tickets={pendingTickets}
+          loading={loading.tickets}
+          onAnalyze={handleAnalyze}
+          analyzing={loading.analyzing}
+        />
 
-      <AnalysisButton
-        onAnalyze={handleAnalyze}
-        loading={loading.analyzing}
-        ticketCount={tickets.length}
-      />
+        <AnalyzedTicketsPane
+          tickets={analyzedTickets}
+          loading={loading.tickets}
+        />
 
-      <AnalysisResults
-        analysis={analysis}
-        loading={loading.analyzing}
-      />
+        <LatestAnalysisPane
+          analysis={analysis}
+          loading={loading.analyzing}
+        />
+      </div>
     </div>
   );
 }
