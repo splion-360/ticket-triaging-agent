@@ -68,7 +68,6 @@ backend/app/
 ├── models/         # SQLAlchemy ORM models
 ├── api/           # FastAPI route handlers  
 ├── agents/        # LangGraph implementation
-├── services/      # Business logic layer
 └── schemas/       # Pydantic request/response models
 ```
 

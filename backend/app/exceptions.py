@@ -1,5 +1,6 @@
-from typing import Optional
+
 from fastapi import HTTPException
+
 
 class BaseAppException(HTTPException):
     def __init__(self, message: str, status_code: int = 500):
@@ -14,7 +15,7 @@ class TicketNotFoundError(BaseAppException):
         super().__init__(f"Ticket {ticket_id} not found", 404)
 
 class AnalysisRunNotFoundError(BaseAppException):
-    def __init__(self, run_id: Optional[int] = None):
+    def __init__(self, run_id: int | None = None):
         msg = f"Analysis run {run_id} not found" if run_id else "No analysis runs found"
         super().__init__(msg, 404)
 

@@ -1,23 +1,23 @@
-from typing import List, Optional
-from pydantic import Field
+
 
 from app.schemas.base import BaseCreateSchema, BaseResponseSchema
 from app.schemas.ticket import TicketResponse
 
+
 class AnalysisRequest(BaseCreateSchema):
-    ticket_ids: Optional[List[int]] = None
+    ticket_ids: list[int] | None = None
 
 class TicketAnalysisResponse(BaseResponseSchema):
     analysis_run_id: int
     ticket_id: int
     category: str
     priority: str
-    notes: Optional[str] = None
-    ticket: Optional[TicketResponse] = None
+    notes: str | None = None
+    ticket: TicketResponse | None = None
 
 class AnalysisRunResponse(BaseResponseSchema):
     summary: str
-    ticket_analyses: List[TicketAnalysisResponse] = []
+    ticket_analyses: list[TicketAnalysisResponse] = []
 
 class AnalysisResultResponse(BaseResponseSchema):
     run: AnalysisRunResponse
