@@ -10,7 +10,7 @@ class BaseCreateSchema(BaseSchema):
     pass
 
 class BaseResponseSchema(BaseSchema):
-    id: int
+    id: str
     created_at: datetime
 
 class PaginationSchema(BaseSchema):

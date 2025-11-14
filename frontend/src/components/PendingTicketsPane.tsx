@@ -15,7 +15,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
   analyzing
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
   const ticketsPerPage = 4;
 
   const paginatedTickets = useMemo(() => {
@@ -26,7 +26,7 @@ export const PendingTicketsPane: React.FC<PendingTicketsPaneProps> = ({
 
   const totalPages = Math.ceil(tickets.length / ticketsPerPage);
 
-  const toggleTicketExpansion = (ticketId: number) => {
+  const toggleTicketExpansion = (ticketId: string) => {
     setExpandedTickets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(ticketId)) {

@@ -10,9 +10,9 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
   analysis,
   onClose
 }) => {
-  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
 
-  const toggleTicketExpansion = (ticketId: number) => {
+  const toggleTicketExpansion = (ticketId: string) => {
     setExpandedTickets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(ticketId)) {
@@ -24,10 +24,6 @@ export const TicketDetailsModal: React.FC<TicketDetailsModalProps> = ({
     });
   };
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {

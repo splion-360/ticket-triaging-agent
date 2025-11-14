@@ -10,7 +10,7 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
   tickets,
   loading
 }) => {
-  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set());
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
 
@@ -38,7 +38,7 @@ export const AnalyzedTicketsPane: React.FC<AnalyzedTicketsPaneProps> = ({
     });
   }, [tickets, filterCategory, filterPriority]);
 
-  const toggleTicketExpansion = (ticketId: number) => {
+  const toggleTicketExpansion = (ticketId: string) => {
     setExpandedTickets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(ticketId)) {

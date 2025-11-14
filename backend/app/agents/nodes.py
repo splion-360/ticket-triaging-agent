@@ -30,7 +30,7 @@ def fetch_tickets_node(state: AnalysisState) -> AnalysisState:
                 f"Analysis run {state['analysis_run_id']} not found"
             )
 
-        tickets = db.query(Ticket).all()
+        tickets = db.query(Ticket).filter(Ticket.status == "incomplete").all()
 
         state["tickets"] = tickets
         db.close()
@@ -90,6 +90,11 @@ def save_results_node(state: AnalysisState) -> AnalysisState:
                 notes=result.get("notes"),
             )
             db.add(ticket_analysis)
+
+            ticket.status = "complete"
+            ticket.category = result["category"]
+            ticket.priority = result["priority"]
+            ticket.notes = result.get("notes")
 
         db.commit()
         db.close()

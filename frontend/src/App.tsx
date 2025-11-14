@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TicketCreationPane } from './components/TicketCreationPane';
 import { PendingTicketsPane } from './components/PendingTicketsPane';
 import { AnalyzedTicketsPane } from './components/AnalyzedTicketsPane';
