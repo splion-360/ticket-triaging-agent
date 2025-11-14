@@ -73,6 +73,8 @@ backend/app/
 ```
 
 ### API Endpoints
+- Endpoint names should always be a NOUN and not a VERB
+- AVOID writing endpoints with hyphens, e.g `/upload-single`
 - `POST /api/tickets` - Bulk ticket creation
 - `POST /api/analyze` - Trigger LangGraph batch analysis
 - `GET /api/analysis/latest` - Retrieve latest analysis results
