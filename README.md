@@ -227,7 +227,7 @@ Retrieve the most recent analysis results.
 
 ### Environment Variables
 
-The system uses environment variables for configuration. Copy the example file and update with your values:
+The system uses environment variables for configuration. Navigate to the `backend/app` folder. Copy the `.env.example` and update with your values
 
 ```bash
 cp .env.example .env
@@ -260,6 +260,7 @@ The system supports both local and cloud LLM providers. Configuration is handled
 ```python
 MODEL = "gemma3"
 API_URL = "http://host.docker.internal:11434/v1"
+LLM_API_KEY="ollama-api-key" # Not REQUIRED. You can use this as is
 ```
 
 **OpenAI Configuration:**
@@ -269,6 +270,7 @@ To use OpenAI instead of local Ollama:
 ```python
 MODEL = "gpt-3.5-turbo" # or any other model of your choosing
 API_URL = "https://api.openai.com/v1"
+LLM_API_KEY = <YOUR_API_KEY> # REQUIRED
 ```
 
 
